@@ -25,6 +25,8 @@ const backoff = require('backoff');
 const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.base);
 fse.mkdirsSync(config.fs.compendium);
+const fs = require('fs');
+const dirTree = require('directory-tree');
 
 const dbURI = config.mongo.location + config.mongo.database;
 mongoose.connect(dbURI);
@@ -39,6 +41,12 @@ const app = express();
 const responseTime = require('response-time');
 const bodyParser = require('body-parser');
 const randomstring = require('randomstring');
+
+// code which is executed on every request
+app.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');    // allow CORS
+    next();
+});
 
 app.use((req, res, next) => {
   debug(req.method + ' ' + req.path);
@@ -105,23 +113,86 @@ function initApp(callback) {
     /*
      * configure routes
      */
-    app.post('/api/v1/substitution', (req, res) => {
-      if (!req.isAuthenticated() || req.user.level < config.user.level.substitute) {
-        res.status(401).send('{"error":"not authenticated or not allowed"}');
-        return;
-      }
+var Compendium = require('./lib/model/compendium');
+
+    // get all compendia for list in authorView.html
+    app.get('/api/v1/substitution/all', (req, res) => {
+      // if (!req.isAuthenticated() || req.user.level < config.user.level.substitute) {
+      //   res.status(401).send('{"error":"not authenticated or not allowed"}');
+      //   return;
+      // }
+      console.log("GET - all erc");
 
       // TODO implement ...
-    });
-    
-    app.get('/api/v1/compedium/:id/substition', function (req, res) {
-      res.setHeader('Content-Type', 'application/json');
-      
-      // query substitions for given id from database
+      var answer = {};
+      var filter = {};
+      var limit = parseInt(req.query.limit || config.list_limit, 10);
+      var start = parseInt(req.query.start || 1, 10) - 1;
 
-      // create response
-      var response = {};
-      res.send(response);
+      // add query element to filter (used in database search) and to the query (used for previous/next links)
+      // eslint-disable-next-line no-eq-null, eqeqeq
+      if (req.query.job_id != null) {
+        filter.job_id = req.query.job_id;
+      }
+      // eslint-disable-next-line no-eq-null, eqeqeq
+      if (req.query.user != null) {
+        filter.user = req.query.user;
+      }
+
+      Compendium.find(filter).select('id').skip(start).limit(limit).exec((err, comps) => {
+        if (err) {
+          res.status(500).send(JSON.stringify({ error: 'query failed' }));
+        } else {
+          var count = comps.length;
+          if (count <= 0) {
+            res.status(404).send(JSON.stringify({ error: 'no compendium found' }));
+          } else {
+
+            answer.results = comps.map(comp => {
+              return comp.id;
+            });
+            console.log(answer); // log compendia IDs
+            res.status(200).send(JSON.stringify(answer));
+          }
+        }
+      });
+    });
+
+    // get data path of two choosen erc's
+    app.get('/api/v1/substitution/get/:xch1/:xch2', function (req, res) {
+      res.setHeader('Content-Type', 'application/json');
+
+      var id_erc1 = req.params.xch1;
+      var id_erc2 = req.params.xch2;
+      var answer = {
+        erc1 : {
+          id : id_erc1,
+          files : []
+        },
+        erc2 : {
+          id : id_erc2,
+          files : []
+        }
+         };
+      // datapath of first erc
+      var folderPath1 = config.fs.compendium + id_erc1 + '/data';
+      try {
+        fs.accessSync(folderPath1); // throws if does not exist
+        answer.erc1.files = dirTree(folderPath1);
+      } catch (e) {
+        res.status(500).send({ error: 'internal error: could not read compendium contents from storage', e });
+        return;
+      }
+      // datapath of second erc
+      var folderPath2 = config.fs.compendium + id_erc2 + '/data';
+      try {
+        fs.accessSync(folderPath2); // throws if does not exist
+        answer.erc2.files = dirTree(folderPath2);
+      } catch (e) {
+        res.status(500).send({ error: 'internal error: could not read compendium contents from storage', e });
+        return;
+      }
+      res.status(200).send(answer); //JSON.stringify(answer)
     });
 
     app.listen(config.net.port, () => {

@@ -36,7 +36,7 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 }
 
 // fs paths
-c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/';
+c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r-dev/'; // '/tmp/o2r/'
 c.fs.compendium = c.fs.base + 'compendium/';
 
 c.id_length = 6; // length of compendium ids [0-9,a-z,A-Z]
