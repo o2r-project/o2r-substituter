@@ -114,7 +114,8 @@ function copyOverlayFiles(passon) {
                 let overlayfile = passon.overlayPath + '/' + substFiles[i].xchange;
                 // check if there is a basefile selected thats gonna be substituted through overlay file
                 if (substFiles[i].original == config.substitution.nobasefile) {
-                    let newoverlayfilename = passon.substitutedPath + '/overlay_' + substFiles[i].xchange;
+                    let newoverlayfilename ='overlay_' + substFiles[i].xchange;
+                    let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
                     try {
                         fse.copySync(overlayfile, newoverlayfilename);
                         substFiles[i].filename = newoverlayfilename;
