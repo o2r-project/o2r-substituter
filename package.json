@@ -4,7 +4,7 @@
   "description": "Node.js implementation for compendia substitution [o2r web api](http://o2r.info/o2r-web-api).",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "DEBUG=subsituter node index.js",
     "startlog": "DEBUG=* node index.js",
     "debug": "DEBUG=* node debug index.js",
     "test": "mocha"

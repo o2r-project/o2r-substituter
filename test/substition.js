@@ -46,6 +46,8 @@ describe('Simple substition of data', function () {
                 assert.ifError(err);
                 done();
             });
+
+            // TODO: use two compendia (uploaded before) to run substitution
         });
 
         it('should respond with HTTP 200 OK', (done) => {

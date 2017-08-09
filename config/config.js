@@ -18,6 +18,7 @@ var c = {};
 c.net = {};
 c.mongo = {};
 c.fs = {};
+c.mount = {};
 var env = process.env;
 
 c.api_version = 1;
@@ -39,6 +40,17 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r-dev/'; // '/tmp/o2r/'
 c.fs.compendium = c.fs.base + 'compendium/';
 
+// substitutoin image
+// c.substitution = {};
+// c.substitution.image = 'metadata.image'; // metadata image name for create container
+
+// docker commands
+c.docker = {};
+c.docker.image = 'docker build';
+c.docker.imageTag = '-t';
+c.docker.imagePoint = '.';
+c.docker.run = 'docker run';
+
 c.id_length = 6; // length of compendium ids [0-9,a-z,A-Z]
 
 // session secret
@@ -48,5 +60,8 @@ c.sessionsecret = env.SESSION_SECRET || 'o2r';
 c.user = {};
 c.user.level = {};
 c.user.level.substitute = 50;
+
+// mount
+c.mount.init = 'sudo mount --bind';
 
 module.exports = c;

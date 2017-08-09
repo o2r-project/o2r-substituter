@@ -42,9 +42,13 @@ const responseTime = require('response-time');
 const bodyParser = require('body-parser');
 const randomstring = require('randomstring');
 
+const substitute = require('./controllers/substitute');
+
 // code which is executed on every request
 app.use(function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');    // allow CORS
+    res.header("Access-Control-Allow-Headers", "Cache-Control, Pragma, Origin, Authorization, Content-Type, X-Requested-With");
+    res.header("Access-Control-Allow-Methods", "GET, PUT, POST");
     next();
 });
 
@@ -113,90 +117,83 @@ function initApp(callback) {
     /*
      * configure routes
      */
-var Compendium = require('./lib/model/compendium');
+     var Compendium = require('./lib/model/compendium');
 
-    // get all compendia for list in authorView.html
-    app.get('/api/v1/substitution/all', (req, res) => {
-      // if (!req.isAuthenticated() || req.user.level < config.user.level.substitute) {
-      //   res.status(401).send('{"error":"not authenticated or not allowed"}');
+    app.post('/api/v1/substitution', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      // if (!req.isAuthenticated()) {
+      //   res.status(401).send('{"error":"not authenticated"}');
       //   return;
       // }
-      console.log("GET - all erc");
+      // if (req.user.level < config.user.level.substitute) {
+      //   res.status(401).send('{"error":"not allowed"}');
+      //   return;
+      // }
 
-      // TODO implement ...
-      var answer = {};
-      var filter = {};
-      var limit = parseInt(req.query.limit || config.list_limit, 10);
-      var start = parseInt(req.query.start || 1, 10) - 1;
+      // new random id
+      let newID = randomstring.generate(config.id_length);
 
-      // add query element to filter (used in database search) and to the query (used for previous/next links)
-      // eslint-disable-next-line no-eq-null, eqeqeq
-      if (req.query.job_id != null) {
-        filter.job_id = req.query.job_id;
-      }
-      // eslint-disable-next-line no-eq-null, eqeqeq
-      if (req.query.user != null) {
-        filter.user = req.query.user;
-      }
-
-      Compendium.find(filter).select('id').skip(start).limit(limit).exec((err, comps) => {
-        if (err) {
-          res.status(500).send(JSON.stringify({ error: 'query failed' }));
-        } else {
-          var count = comps.length;
-          if (count <= 0) {
-            res.status(404).send(JSON.stringify({ error: 'no compendium found' }));
-          } else {
-
-            answer.results = comps.map(comp => {
-              return comp.id;
-            });
-            console.log(answer); // log compendia IDs
-            res.status(200).send(JSON.stringify(answer));
-          }
+      // TODO: user id
+      // TODO: check if id exists
+      // TODO: run analysis
+      let passon = {
+        user: "0000-0003-2287-369X",  // req.user.id
+        id: newID,
+        metadata: {
+          substituted: true,
+          substitution: req.body
         }
+      };
+      debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
+      return substitute.getMetadata(passon)    // get metadata
+        .then(substitute.createFolder)         // create folder with id
+        .then(substitute.mountBaseFiles)       // mount base files into folder
+        .then(substitute.mountOverlayFiles)    // mount overlay files into folder
+        .then(substitute.saveToDB)             // save to DB
+        .then((passon) => {
+            debug('[%s] Finished substitution of new compendium.', passon.id);
+            res.status(200).send(passon);
+        })
+        .catch(err => {
+            debug('[%s] - Error during substitution', passon.id, JSON.stringify(err));
+            // let status = 500; // TODO: let
+            // if (err.status) {
+            //   status = err.status;
+            // }
+            // let msg = 'Internal error'; // TODO: let
+            // if (err.msg) {
+            //   msg = err.msg;
+            // }
+            // res.status(status).send(JSON.stringify({ err: msg }));
+        });
+    });
+
+    app.get('/api/v1/substitution/run/:id/:image', (req, res) => {
+      console.log(req.params.id);
+      let passon = {
+        id: req.params.id,
+        image: req.params.image
+      };
+      debug('[%s] Starting run analysis ...', passon.id);
+      return substitute.createDockerImage(passon)
+        .then(substitute.startDockerContainer)
+        .then((passon) => {
+          debug('[%s] Finished run analysis.', passon.id);
+          res.status(200).send(passon);
+      })
+      .catch(err => {
+          debug('[%s] - Error during run analysis', passon.id, JSON.stringify(err));
       });
     });
 
-    // get data path of two choosen erc's
-    app.get('/api/v1/substitution/get/:xch1/:xch2', function (req, res) {
-      res.setHeader('Content-Type', 'application/json');
+    // GET ilst of subtsitutions
+    // app.get('/api/v1/substitutions');
 
-      var id_erc1 = req.params.xch1;
-      var id_erc2 = req.params.xch2;
-      var answer = {
-        erc1 : {
-          id : id_erc1,
-          files : []
-        },
-        erc2 : {
-          id : id_erc2,
-          files : []
-        }
-         };
-      // datapath of first erc
-      var folderPath1 = config.fs.compendium + id_erc1 + '/data';
-      try {
-        fs.accessSync(folderPath1); // throws if does not exist
-        answer.erc1.files = dirTree(folderPath1);
-      } catch (e) {
-        res.status(500).send({ error: 'internal error: could not read compendium contents from storage', e });
-        return;
-      }
-      // datapath of second erc
-      var folderPath2 = config.fs.compendium + id_erc2 + '/data';
-      try {
-        fs.accessSync(folderPath2); // throws if does not exist
-        answer.erc2.files = dirTree(folderPath2);
-      } catch (e) {
-        res.status(500).send({ error: 'internal error: could not read compendium contents from storage', e });
-        return;
-      }
-      res.status(200).send(answer); //JSON.stringify(answer)
-    });
+    // GET list fo realted substitutions by filter "base" and/or "overlay"
+    // app.get('/api/v1/substitutions/?base...&overlay=---');
 
     app.listen(config.net.port, () => {
-      debug('substitution %s with API version %s waiting for requests on port %s',
+      debug('substituter %s with API version %s waiting for requests on port %s',
         config.version,
         config.api_version,
         config.net.port);
