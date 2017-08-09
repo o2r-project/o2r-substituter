@@ -147,8 +147,8 @@ function initApp(callback) {
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
       return substitute.getMetadata(passon)    // get metadata
         .then(substitute.createFolder)         // create folder with id
-        .then(substitute.mountBaseFiles)       // mount base files into folder
-        .then(substitute.mountOverlayFiles)    // mount overlay files into folder
+        .then(substitute.copyBaseFiles)       // copy base files into folder
+        .then(substitute.copyOverlayFiles)    // copy overlay files into folder
         .then(substitute.saveToDB)             // save to DB
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);

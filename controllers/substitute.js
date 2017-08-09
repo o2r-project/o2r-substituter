@@ -75,101 +75,64 @@ function createFolder(passon) {
 }
 
 /**
- * function to mount bsae files for new compendium
+ * function to copy base files for new compendium
  * @param {object} passon - new compendium id and data of origin compendia
  */
-function mountBaseFiles(passon) {
-    debug('[%s] Mounting base files ...', passon.id);
+function copyBaseFiles(passon) {
+    debug('[%s] Copying base files ...', passon.id);
         return new Promise((fulfill, reject) => {
-        // try {
-            let cmd = [
-                config.mount.init,
-                passon.basePath,
-                passon.substitutedPath
-            ].join(' ');
-
-            debug('[%s] Running base mount with command \n"%s"\n', passon.id, cmd);
-            exec(cmd, (error, stdout, stderr) => {
-                if (error || stderr) {
-                    debug('[%s] Problem during base mount:\n\t%s\n\t%s',
-                        passon.id, error.message, stderr.message);
-                    debug(error, stderr, stdout);
-                    let errors = error.message.split(':');
-                    let message = errorMessageHelper(errors[errors.length - 1]);
-                    error.msg = JSON.stringify({ error: 'mount failed: ' + message });
-                    reject(error);
-                } else {
-                    debug('[%s] Completed base mount.\n', passon.id);
-
-                    // check if metadata was found, if so put the metadata directory into passon
-                    fse.readdir(passon.substitutedPath, (err, files) => {
-                        if (err) {
-                            debug('[%s] Error reading directory %s:\n\t%s', passon.id, passon.substitutedPath, err);
-                            reject(err);
-                        } else if (files.length < 1) {
-                            debug('[%s] Mount directory %s is empty:\n\t%s', passon.id, passon.substitutedPath, err);
-                            reject(new Error('No files in the mount directory'));
-                        } else {
-                            debug('[%s] Finished mounting [%s] base files: %s', passon.id, files.length, JSON.stringify(files));
-                            fulfill(passon);
-                        }
-                    });
-                }
-            });
-        // } catch(err) {
-        //     console.log(err);
-        //     debug('Error mounting base files to directory of new compendium - id: %s', err);
-        //     reject('Error mounting base files to directory of new compendium: \n' + err);
-        // }
-        // fulfill(passon);
+        try {
+            debug('[%s] Running copy base files', passon.id);
+            fse.copySync(passon.basePath, passon.substitutedPath);
+            debug('[%s] Finished copy base files', passon.id);
+            fulfill(passon);
+        } catch(err) {
+            debug('Error copying base files to directory of new compendium - id: %s', err);
+            reject('Error copying base files to directory of new compendium: \n' + err);
+        }
     });
 }
 
 /**
- * function to mount overlay files for new compendium
+ * function to copy overlay files for new compendium
  * @param {object} passon - new compendium id and data of origin compendia
  */
-function mountOverlayFiles(passon) {
-    debug('[%s] Mounting overlay files ...', passon.id);
+function copyOverlayFiles(passon) {
+    debug('[%s] Copying overlay files ...', passon.id);
 
     return new Promise((fulfill, reject) => {
-      // try {
         let substFiles = passon.metadata.substitution.substitutionFiles;
-        debug('[%s] Running overlay mount [%s] times ...', passon.id, substFiles.length);
+        debug('[%s] Running copy overlay files [%s] times ...', passon.id, substFiles.length);
         for (var i=0; i<=substFiles.length; i++) {
           // execute only if the last file is mounted
             if (i==substFiles.length) {
-                debug('[%s] Nr. %s : Finished overlay mount.\n', passon.id, i-1);
+                debug('[%s] Finished copy overlay files.\n', passon.id);
                 fulfill(passon);
             } else {
-                let cmd = [
-                    config.mount.init,
-                    path.join(passon.overlayPath, substFiles[i].xchange),
-                    path.join(passon.substitutedPath, substFiles[i].original)
-                ].join(' ');
-
-                debug('[%s] Running overlay mount with command "%s"', passon.id, cmd);
-                exec(cmd, (error, stdout, stderr) => {
-                    if (error || stderr) {
-                        debug('[%s] Problem during overlay mount:\n\t%s\n\t%s',
-                            passon.id, error.message, stderr.message);
-                        debug(error, stderr, stdout);
-                        let errors = error.message.split(':');
-                        let message = errorMessageHelper(errors[errors.length - 1]);
-                        error.msg = JSON.stringify({ error: 'mount failed: ' + message });
-                        reject(error);
-                    } else {
-                        debug('[%s] Nr. %s : overlay mount ...', passon.id, i);
+                debug('[%s] copied files: %s', passon.id, (i+1));
+                let basefile = passon.substitutedPath + '/' + substFiles[i].original;
+                let overlayfile = passon.overlayPath + '/' + substFiles[i].xchange;
+                // check if there is a basefile selected thats gonna be substituted through overlay file
+                if (substFiles[i].original == config.substitution.nobasefile) {
+                    let newoverlayfilename = passon.substitutedPath + '/overlay_' + substFiles[i].xchange;
+                    try {
+                        fse.copySync(overlayfile, newoverlayfilename);
+                        substFiles[i].filename = newoverlayfilename;
+                    } catch(err) {
+                      debug('Error copying overlay files (without basefile) to directory of new compendium - id: %s', err);
+                      reject('Error copying overlay files (without basefile) to directory of new compendium: \n' + err);
                     }
-                });
+                } else {
+                  try {
+                      fse.copySync(overlayfile, basefile);  //TODO: check if name is copied too
+                      substFiles[i].filename = substFiles[i].original;
+                  } catch(err) {
+                      debug('Error copying overlay files to directory of new compendium - id: %s', err);
+                      reject('Error copying overlay files to directory of new compendium: \n' + err);
+                  }
+                }
           }
         }
-      // } catch(err) {
-      //     console.log(err);
-      //     debug('Error mounting overlay files to directory of new compendium - id: %s', err);
-      //     reject('Error mounting overlay files to directory of new compendium: \n' + err);
-      // }
-      // fulfill(passon);
     });
 }
 
@@ -269,8 +232,8 @@ module.exports = {
     // checkNewId: checkNewId,
     getMetadata: getMetadata,
     createFolder: createFolder,
-    mountBaseFiles: mountBaseFiles,
-    mountOverlayFiles: mountOverlayFiles,
+    copyBaseFiles: copyBaseFiles,
+    copyOverlayFiles: copyOverlayFiles,
     // runAnalysis: runAnalysis,
     saveToDB: saveToDB,
     createDockerImage: createDockerImage,

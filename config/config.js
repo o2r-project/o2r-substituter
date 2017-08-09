@@ -41,7 +41,8 @@ c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r-dev/'; // '/tmp/o2r/'
 c.fs.compendium = c.fs.base + 'compendium/';
 
 // substitutoin image
-// c.substitution = {};
+c.substitution = {};
+c.substitution.nobasefile = "$noFile$";   // if there is no base file selected when substitute
 // c.substitution.image = 'metadata.image'; // metadata image name for create container
 
 // docker commands
@@ -60,8 +61,5 @@ c.sessionsecret = env.SESSION_SECRET || 'o2r';
 c.user = {};
 c.user.level = {};
 c.user.level.substitute = 50;
-
-// mount
-c.mount.init = 'sudo mount --bind';
 
 module.exports = c;
