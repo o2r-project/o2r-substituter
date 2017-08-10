@@ -12,7 +12,7 @@ author:
 title:
   formatted: "Mit Berlin formatted"
   # If you use tex in the formatted title, also supply version without
-  plain:     "Mit Berlin plain"
+  plain:     "base01 - Mit Berlin"
   # For running headers, if needed
   short:     "Mit Berlin short"
 abstract: >

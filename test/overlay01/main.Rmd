@@ -12,7 +12,7 @@ author:
 title:
   formatted: "Ohne Berlin formatted"
   # If you use tex in the formatted title, also supply version without
-  plain:     "Ohne Berlin plain"
+  plain:     "overlay01 - Ohne Berlin"
   # For running headers, if needed
   short:     "Ohne Berlin short"
 abstract: >
