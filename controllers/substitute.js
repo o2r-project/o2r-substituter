@@ -22,6 +22,9 @@ const path = require('path');
 const exec = require('child_process').exec;
 const errorMessageHelper = require('../lib/error-message');
 
+var Stream = require('stream');
+const Docker = require('dockerode');
+
 // check fs & create dirs if necessary
 const fse = require('fs-extra');
 // fse.mkdirsSync(config.fs.base);
@@ -110,28 +113,30 @@ function copyOverlayFiles(passon) {
                 fulfill(passon);
             } else {
                 debug('[%s] copied files: %s', passon.id, (i+1));
-                let basefile = passon.substitutedPath + '/' + substFiles[i].original;
-                let overlayfile = passon.overlayPath + '/' + substFiles[i].xchange;
+                let basefile = passon.substitutedPath + '/' + substFiles[i].base;
+                let overlayfile = passon.overlayPath + '/' + substFiles[i].overlay;
                 // check if there is a basefile selected thats gonna be substituted through overlay file
-                if (substFiles[i].original == config.substitution.nobasefile) {
-                    let newoverlayfilename ='overlay_' + substFiles[i].xchange;
-                    let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
-                    try {
-                        fse.copySync(overlayfile, newoverlayfilename);
-                        substFiles[i].filename = newoverlayfilename;
-                    } catch(err) {
-                      debug('Error copying overlay files (without basefile) to directory of new compendium - id: %s', err);
-                      reject('Error copying overlay files (without basefile) to directory of new compendium: \n' + err);
-                    }
-                } else {
+                // if (substFiles[i].base == config.substitution.nobasefile) {
+                //
+                //     let newoverlayfilename ='overlay_' + substFiles[i].overlay;
+                //     let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
+                //     try {
+                //         fse.copySync(overlayfile, newoverlayfilename);
+                //         substFiles[i].filename = newoverlayfilename;
+                //     } catch(err) {
+                //       debug('Error copying overlay files (without basefile) to directory of new compendium - id: %s', err);
+                //       reject('Error copying overlay files (without basefile) to directory of new compendium: \n' + err);
+                //     }
+                // } else {
                   try {
-                      fse.copySync(overlayfile, basefile);  //TODO: check if name is copied too
-                      substFiles[i].filename = substFiles[i].original;
+                      let newoverlayfilename ='overlay_' + substFiles[i].overlay;
+                      let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
+                      fse.copySync(overlayfile, newoverlayfilepath);  //TODO: check if name is copied too
+                      substFiles[i].filename = newoverlayfilename;
                   } catch(err) {
                       debug('Error copying overlay files to directory of new compendium - id: %s', err);
                       reject('Error copying overlay files to directory of new compendium: \n' + err);
                   }
-                }
           }
         }
     });
@@ -148,6 +153,10 @@ function saveToDB(passon) {
         metadataToSave = passon.baseMetaData;
         metadataToSave.substituted = passon.metadata.substituted;
         metadataToSave.substitution = passon.metadata.substitution;
+        // change title of Substituted ERC
+        metadataToSave.raw.title = 'Subst && ' + metadataToSave.raw.title;
+        metadataToSave.o2r.title = 'Subst && ' + metadataToSave.o2r.title;  // this is for visible title
+        metadataToSave.zenodo.title = 'Subst && ' + metadataToSave.zenodo.title;
         var compendium = new Compendium({
             id: passon.id,
             user: passon.user,
@@ -175,28 +184,91 @@ function saveToDB(passon) {
  function createDockerImage(passon) {
     return new Promise((fulfill, reject) => {
       debug('[%s] Creating docker image ...', passon.id);
-      let cmd = [
-          config.docker.image,
-          config.docker.imageTag,
-          passon.id,
-          config.docker.imagePoint
-      ].join(' ');
+      let imagetitle = 'subst' + passon.id;
+      imagetitle = imagetitle.toLowerCase();
+      // let cmd = [
+      //     config.docker.image,
+      //     config.docker.imageTag,
+      //     imagetitle,
+      //     config.docker.imagePoint
+      // ].join(' ');
+      //
+      // debug('Creating docker image using command "%s"', cmd);
+      // exec(cmd, (error, stdout, stderr) => {
+      //     if (error || stderr) {
+      //       console.log("\n error: \n" + stdout + " \n \n ");
+      //         debug(error, stderr, stdout);
+      //         error.msg = JSON.stringify({ error: 'internal error' });
+      //         error.status = 500;
+      //         reject(error);
+      //     } else {
+      //       console.log("stdout");
+      //       console.log("\n success: \n" + stdout + " \n \n ");
+      //         passon.docker = {};
+      //         passon.docker.imageTag = imagetitle;
+      //         passon.docker.imageCMD = cmd;
+      //         debug('Image creation complete.');
+      //         fulfill(passon);
+      //     }
+      // });
 
-      debug('Creating docker image using command "%s"', cmd);
-      exec(cmd, (error, stdout, stderr) => {
-          console.log("\n \n" + stdout + " \n \n ");
-          if (error || stderr) {
-              debug(error, stderr, stdout);
-              error.msg = JSON.stringify({ error: 'internal error' });
-              error.status = 500;
+      // setup Docker client with default options
+      var docker = new Docker();
+
+      let lastData = null;
+      let ercPath = path.join(config.fs.compendium, passon.id) + '/data';
+      passon.dirpath = ercPath;
+
+      docker.buildImage(context: passon.dirpath,
+        src: ['Dockerfile'],
+        { t: passon.docker.imageTag }, (error, output) => {
+          if (error) {
+            // this.updateStep('image_build', 'failure', error, (err) => {
+            //   if (err) reject(err);
+
               reject(error);
+//             });
           } else {
-              passon.cmd = {};
-              passon.cmd.image = cmd;
-              debug('Image creation complete.');
-              fulfill(passon);
+            output.on('data', d => {
+              lastData = JSON.parse(d.toString('utf8'));
+
+              // debugBuild('[%s] [build] %s', this.jobId, JSON.stringify(lastData));
+
+              // this.textAppend('image_build', lastData.stream, (err) => {
+              //   if (err) {
+              //     debugBuild('[%s] ERROR appending last output log "%s" to job %s', lastData.stream, this.jobId);
+              //     reject(err);
+              //   }
+              // });
+            });
+            output.on('end', () => {
+              // check if build actually succeeded
+              if (lastData.error) {
+                // debug('[%s] Created Docker image NOT created: %s', this.jobId, JSON.stringify(lastData));
+                debug('created docker image NOT created');
+                // this.updateStep('image_build', 'failure', lastData.error, (err) => {
+                //   if (err) reject(err);
+                //
+                //   reject(new Error(lastData.error));
+                // });
+
+              }
+              else if (lastData.stream && (lastData.stream.startsWith('Successfully built') || lastData.stream.startsWith('Successfully tagged'))) {
+                // debug('[%s] Created Docker image "%s", last log was "%s"', this.jobId, this.imageTag, lastData.stream);
+                debug('create docker image');
+                // this.updateStep('image_build', 'success', null, (err) => {
+                //   if (err) {
+                //     debugBuild('[%s] ERROR updating step: %s', err);
+                //     reject(err);
+                //   }
+
+                  passon.docker.imageTag = this.imageTag;
+                  fulfill(passon);
+                });
+              }
+            });
           }
-      });
+        });
   });
  }
 
@@ -206,26 +278,72 @@ function saveToDB(passon) {
  */
  function startDockerContainer(passon) {
     return new Promise((fulfill, reject) => {
-        debug('[%s] Starting docker container with image [%s] ...',passon.id, passon.image);
-        let cmd = [
-            config.docker.run,
-            passon.image
-        ].join(' ');
 
-        debug('Starting docker container using command "%s"', cmd);
+        // setup Docker client with default options
+        // var docker = new Docker();
+        // debug('Docker client set up: %s', JSON.stringify(docker));
+        //
+        // if (!passon.docker.imageTag) {
+        //     reject(new Error('image tag was not passed on!'));
+        // }
+        //
+        debug('[%s] Starting docker container with image [%s] ...',passon.id, passon.docker.imageTag);
+        let cmd = "docker image ls";
         exec(cmd, (error, stdout, stderr) => {
-            console.log("\n \n" + stdout + " \n \n ");
             if (error || stderr) {
+              console.log("\n error: \n" + stdout + " \n \n ");
                 debug(error, stderr, stdout);
                 error.msg = JSON.stringify({ error: 'internal error' });
                 error.status = 500;
                 reject(error);
             } else {
-                passon.cmd.container = cmd;
-                debug('Docker Container complete.');
+              console.log("stdout");
+              console.log("\n success: \n" + stdout + " \n \n ");
+                debug('Image creation complete.');
                 fulfill(passon);
             }
         });
+
+        // docker.run(passon.docker.imageTag, [], stdStream, create_options, start_options, (err, data, container) => {
+        //     passon.docker.containerTag = container; // pass on a reference to container for later cleanup
+        //     if (err) {
+        //         reject(new Error('error: starting container'));
+        //     }
+        // }
+        //
+        // //promise
+        // docker.run(testImage, ['bash', '-c', 'uname -a'], process.stdout).then(function(container) {
+        //     console.log(container.output.StatusCode);
+        //     return container.remove();
+        // }).then(function(data) {
+        //     console.log('container removed');
+        // }).catch(function(err) {
+        //     console.log(err);
+        // });
+
+
+        // debug('Starting Docker container now with options:\n\tcreate_options: %s\n\tstart_options: %s',
+        //   JSON.stringify(create_options), JSON.stringify(start_options));
+
+        // let cmd = [
+        //     config.docker.run,
+        //     passon.image
+        // ].join(' ');
+        //
+        // debug('Starting docker container using command "%s"', cmd);
+        // exec(cmd, (error, stdout, stderr) => {
+        //     console.log("\n \n" + stdout + " \n \n ");
+        //     if (error || stderr) {
+        //         debug(error, stderr, stdout);
+        //         error.msg = JSON.stringify({ error: 'internal error' });
+        //         error.status = 500;
+        //         reject(error);
+        //     } else {
+        //         passon.cmd.container = cmd;
+        //         debug('Docker Container complete.');
+        //         fulfill(passon);
+        //     }
+        // });
     });
  }
 

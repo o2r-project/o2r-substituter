@@ -137,7 +137,7 @@ function initApp(callback) {
       // TODO: check if id exists
       // TODO: run analysis
       let passon = {
-        user: "0000-0003-2287-369X",  // req.user.id
+        user: "0000-0003-2287-369X",  // TODO: req.user.id
         id: newID,
         metadata: {
           substituted: true,
@@ -168,11 +168,10 @@ function initApp(callback) {
         });
     });
 
-    app.get('/api/v1/substitution/run/:id/:image', (req, res) => {
+    app.get('/api/v1/substitution/run/:id', (req, res) => {
       console.log(req.params.id);
       let passon = {
         id: req.params.id,
-        image: req.params.image
       };
       debug('[%s] Starting run analysis ...', passon.id);
       return substitute.createDockerImage(passon)
