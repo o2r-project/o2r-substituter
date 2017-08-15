@@ -26,7 +26,7 @@ const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.base);
 fse.mkdirsSync(config.fs.compendium);
 const fs = require('fs');
-const dirTree = require('directory-tree');
+// const dirTree = require('directory-tree');
 
 const dbURI = config.mongo.location + config.mongo.database;
 mongoose.connect(dbURI);
@@ -181,6 +181,8 @@ function initApp(callback) {
           res.status(200).send(passon);
       })
       .catch(err => {
+          console.log("err");
+          console.log(err);
           debug('[%s] - Error during run analysis', passon.id, JSON.stringify(err));
       });
     });

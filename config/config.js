@@ -40,17 +40,31 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r-dev/'; // '/tmp/o2r/'
 c.fs.compendium = c.fs.base + 'compendium/';
 
-// substitutoin image
-c.substitution = {};
-c.substitution.nobasefile = "$noFile$";   // if there is no base file selected when substitute
-// c.substitution.image = 'metadata.image'; // metadata image name for create container
-
 // docker commands
 c.docker = {};
-c.docker.image = 'docker build';
-c.docker.imageTag = '-t';
-c.docker.imagePoint = '.';
-c.docker.run = 'docker run';
+
+c.bagtainer = {};
+c.bagtainer.docker = {};
+// See https://docs.docker.com/engine/reference/commandline/create/ and https://docs.docker.com/engine/reference/api/docker_remote_api_v1.24/#create-a-container
+c.bagtainer.docker.create_options = {
+  //AttachStderr: true,
+  //AttachStdin: false,
+  //AttachStdout: true,
+  //Cmd: ['bash', '-c', 'cat /etc/resolv.conf'],
+  CpuShares: 256,
+  //Cpuset: '',
+  //Domainname: '',
+  //Entrypoint: null,
+  Env: ['O2RPLATFORM=true'],
+  //Hostname: 'b9ea983254ef',
+  Memory: 1073741824, // 1G
+  MemorySwap: 2147483648, // double of 1G
+  NetworkMode: 'none',
+  Rm: true
+};
+// https://docs.docker.com/engine/reference/api/docker_remote_api_v1.24/#start-a-container
+c.bagtainer.docker.start_options = {
+};
 
 c.id_length = 6; // length of compendium ids [0-9,a-z,A-Z]
 

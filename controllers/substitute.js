@@ -24,6 +24,7 @@ const errorMessageHelper = require('../lib/error-message');
 
 var Stream = require('stream');
 const Docker = require('dockerode');
+const clone = require('clone');
 
 // check fs & create dirs if necessary
 const fse = require('fs-extra');
@@ -115,19 +116,6 @@ function copyOverlayFiles(passon) {
                 debug('[%s] copied files: %s', passon.id, (i+1));
                 let basefile = passon.substitutedPath + '/' + substFiles[i].base;
                 let overlayfile = passon.overlayPath + '/' + substFiles[i].overlay;
-                // check if there is a basefile selected thats gonna be substituted through overlay file
-                // if (substFiles[i].base == config.substitution.nobasefile) {
-                //
-                //     let newoverlayfilename ='overlay_' + substFiles[i].overlay;
-                //     let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
-                //     try {
-                //         fse.copySync(overlayfile, newoverlayfilename);
-                //         substFiles[i].filename = newoverlayfilename;
-                //     } catch(err) {
-                //       debug('Error copying overlay files (without basefile) to directory of new compendium - id: %s', err);
-                //       reject('Error copying overlay files (without basefile) to directory of new compendium: \n' + err);
-                //     }
-                // } else {
                   try {
                       let newoverlayfilename ='overlay_' + substFiles[i].overlay;
                       let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
@@ -153,10 +141,6 @@ function saveToDB(passon) {
         metadataToSave = passon.baseMetaData;
         metadataToSave.substituted = passon.metadata.substituted;
         metadataToSave.substitution = passon.metadata.substitution;
-        // change title of Substituted ERC
-        metadataToSave.raw.title = 'Subst && ' + metadataToSave.raw.title;
-        metadataToSave.o2r.title = 'Subst && ' + metadataToSave.o2r.title;  // this is for visible title
-        metadataToSave.zenodo.title = 'Subst && ' + metadataToSave.zenodo.title;
         var compendium = new Compendium({
             id: passon.id,
             user: passon.user,
@@ -185,90 +169,24 @@ function saveToDB(passon) {
     return new Promise((fulfill, reject) => {
       debug('[%s] Creating docker image ...', passon.id);
       let imagetitle = 'subst' + passon.id;
-      imagetitle = imagetitle.toLowerCase();
-      // let cmd = [
-      //     config.docker.image,
-      //     config.docker.imageTag,
-      //     imagetitle,
-      //     config.docker.imagePoint
-      // ].join(' ');
-      //
-      // debug('Creating docker image using command "%s"', cmd);
-      // exec(cmd, (error, stdout, stderr) => {
-      //     if (error || stderr) {
-      //       console.log("\n error: \n" + stdout + " \n \n ");
-      //         debug(error, stderr, stdout);
-      //         error.msg = JSON.stringify({ error: 'internal error' });
-      //         error.status = 500;
-      //         reject(error);
-      //     } else {
-      //       console.log("stdout");
-      //       console.log("\n success: \n" + stdout + " \n \n ");
-      //         passon.docker = {};
-      //         passon.docker.imageTag = imagetitle;
-      //         passon.docker.imageCMD = cmd;
-      //         debug('Image creation complete.');
-      //         fulfill(passon);
-      //     }
-      // });
+      imagetitle = "bagtainer:" + imagetitle.toLowerCase();
 
       // setup Docker client with default options
       var docker = new Docker();
+      // debug('[%s] Docker client set up: %s', passon.id, JSON.stringify(docker));
+      debug('[%s] Docker client set up.', passon.id);
 
-      let lastData = null;
-      let ercPath = path.join(config.fs.compendium, passon.id) + '/data';
-      passon.dirpath = ercPath;
+      docker.buildImage({
+        context: "/tmp/o2r-dev/compendium/sVAYJ3/data/",
+        src: ['Dockerfile', "main.Rmd", "BerlinMit.csv", "erc.yml"]
+      }, {t: imagetitle}, function (err, response) {
+          if (err) debug(err)
+          debug('# \n # \n Creating docker  image finished. \n # \n #');
+          passon.docker = {};
+          passon.docker.imageTag = imagetitle;
+          fulfill(passon);
+      });
 
-      docker.buildImage(context: passon.dirpath,
-        src: ['Dockerfile'],
-        { t: passon.docker.imageTag }, (error, output) => {
-          if (error) {
-            // this.updateStep('image_build', 'failure', error, (err) => {
-            //   if (err) reject(err);
-
-              reject(error);
-//             });
-          } else {
-            output.on('data', d => {
-              lastData = JSON.parse(d.toString('utf8'));
-
-              // debugBuild('[%s] [build] %s', this.jobId, JSON.stringify(lastData));
-
-              // this.textAppend('image_build', lastData.stream, (err) => {
-              //   if (err) {
-              //     debugBuild('[%s] ERROR appending last output log "%s" to job %s', lastData.stream, this.jobId);
-              //     reject(err);
-              //   }
-              // });
-            });
-            output.on('end', () => {
-              // check if build actually succeeded
-              if (lastData.error) {
-                // debug('[%s] Created Docker image NOT created: %s', this.jobId, JSON.stringify(lastData));
-                debug('created docker image NOT created');
-                // this.updateStep('image_build', 'failure', lastData.error, (err) => {
-                //   if (err) reject(err);
-                //
-                //   reject(new Error(lastData.error));
-                // });
-
-              }
-              else if (lastData.stream && (lastData.stream.startsWith('Successfully built') || lastData.stream.startsWith('Successfully tagged'))) {
-                // debug('[%s] Created Docker image "%s", last log was "%s"', this.jobId, this.imageTag, lastData.stream);
-                debug('create docker image');
-                // this.updateStep('image_build', 'success', null, (err) => {
-                //   if (err) {
-                //     debugBuild('[%s] ERROR updating step: %s', err);
-                //     reject(err);
-                //   }
-
-                  passon.docker.imageTag = this.imageTag;
-                  fulfill(passon);
-                });
-              }
-            });
-          }
-        });
   });
  }
 
@@ -279,71 +197,82 @@ function saveToDB(passon) {
  function startDockerContainer(passon) {
     return new Promise((fulfill, reject) => {
 
+        passon.metadata = {};
+        substitutionFiles = new Array();
+        var array1 = {
+            base: "BerlinMit.csv",
+            overlay: "BerlinOhne.csv",
+            filename: "overlay_BerlinOhne.csv"
+        };
+        substitutionFiles.push(array1);
+        var substitution = {
+            base: "AOD79",
+            overlay: "DNj1p",
+            substitutionFiles: substitutionFiles
+        };
+        passon.metadata = {
+          substituted: true,
+          substitution: substitution
+        };
+
         // setup Docker client with default options
-        // var docker = new Docker();
+        var docker = new Docker();
         // debug('Docker client set up: %s', JSON.stringify(docker));
-        //
-        // if (!passon.docker.imageTag) {
-        //     reject(new Error('image tag was not passed on!'));
-        // }
-        //
+        debug('[%s] Starting docker container ...');
+        if (!passon.docker.imageTag) {
+            debug('[%s] image tag was not passed.');
+            reject(new Error('image tag was not passed on!'));
+        }
+
         debug('[%s] Starting docker container with image [%s] ...',passon.id, passon.docker.imageTag);
-        let cmd = "docker image ls";
-        exec(cmd, (error, stdout, stderr) => {
-            if (error || stderr) {
-              console.log("\n error: \n" + stdout + " \n \n ");
-                debug(error, stderr, stdout);
-                error.msg = JSON.stringify({ error: 'internal error' });
-                error.status = 500;
-                reject(error);
-            } else {
-              console.log("stdout");
-              console.log("\n success: \n" + stdout + " \n \n ");
-                debug('Image creation complete.');
+        let substFiles = passon.metadata.substitution.substitutionFiles;
+        passon.o2rPath = config.fs.compendium + passon.id + '/data/'; //TODO: check if anywhere else saved in passon
+        let volumemount = "";
+        let containerBinds = new Array();
+        let baseBind = config.fs.compendium + passon.id + '/data' + ":" + "/erc";
+        containerBinds.push(baseBind);
+        for (let i=0; i< substFiles.length; i++) {
+            // volumemount = volumemount + " -v " + passon.o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base;
+            let bind = passon.o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
+            // let bind = passon.o2rPath + substFiles[i].filename + ":" + passon.o2rPath + substFiles[i].base;
+            containerBinds.push(bind);
+        }
+        passon.docker.binds = containerBinds;
+
+        if (!passon.docker.binds) {
+            debug('[%s] volume binds was not passed.');
+            reject(new Error('volume binds was not passed!'));
+        } else {
+            debug('Run docker image with binds: %s', JSON.stringify(passon.docker.binds));
+
+            // docker.run(...);
+            let create_options = clone(config.bagtainer.docker.create_options);
+            let start_options = clone(config.bagtainer.docker.start_options);
+            debug('Starting Docker container now with options:\n\tcreate_options: %s\n\tstart_options: %s', JSON.stringify(create_options), JSON.stringify(start_options));
+
+            docker.run(passon.docker.imageTag, [], process.stdout, {
+              Volumes: {
+                '/erc' : {}
+              },
+              "HostConfig": {
+                "Binds": [baseBind]
+              }
+            }).then(function(container) {
+                debug('Container StatusCode: %s', container.output.StatusCode);
+                if (container.output.StatusCode === 0) {
+                    debug('[%s] Creating container finished.', passon.id);
+                    passon.docker.containerID = container.id;
+                    debug('removing container %s ...', container.id);
+                    // return container.remove();
+                }
+            }).then(function(data) {
+                debug('container removed');
                 fulfill(passon);
-            }
-        });
-
-        // docker.run(passon.docker.imageTag, [], stdStream, create_options, start_options, (err, data, container) => {
-        //     passon.docker.containerTag = container; // pass on a reference to container for later cleanup
-        //     if (err) {
-        //         reject(new Error('error: starting container'));
-        //     }
-        // }
-        //
-        // //promise
-        // docker.run(testImage, ['bash', '-c', 'uname -a'], process.stdout).then(function(container) {
-        //     console.log(container.output.StatusCode);
-        //     return container.remove();
-        // }).then(function(data) {
-        //     console.log('container removed');
-        // }).catch(function(err) {
-        //     console.log(err);
-        // });
-
-
-        // debug('Starting Docker container now with options:\n\tcreate_options: %s\n\tstart_options: %s',
-        //   JSON.stringify(create_options), JSON.stringify(start_options));
-
-        // let cmd = [
-        //     config.docker.run,
-        //     passon.image
-        // ].join(' ');
-        //
-        // debug('Starting docker container using command "%s"', cmd);
-        // exec(cmd, (error, stdout, stderr) => {
-        //     console.log("\n \n" + stdout + " \n \n ");
-        //     if (error || stderr) {
-        //         debug(error, stderr, stdout);
-        //         error.msg = JSON.stringify({ error: 'internal error' });
-        //         error.status = 500;
-        //         reject(error);
-        //     } else {
-        //         passon.cmd.container = cmd;
-        //         debug('Docker Container complete.');
-        //         fulfill(passon);
-        //     }
-        // });
+            }).catch(function(err) {
+                debug('[DOCKER] error: %s', err);
+                reject(new Error(err));
+            });
+        }
     });
  }
 
