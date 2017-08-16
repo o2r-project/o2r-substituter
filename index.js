@@ -159,15 +159,17 @@ function initApp(callback) {
         })
         .catch(err => {
             debug('[%s] - Error during substitution', passon.id, JSON.stringify(err));
-            // let status = 500; // TODO: let
-            // if (err.status) {
-            //   status = err.status;
-            // }
-            // let msg = 'Internal error'; // TODO: let
-            // if (err.msg) {
-            //   msg = err.msg;
-            // }
-            // res.status(status).send(JSON.stringify({ err: msg }));
+            substitute.cleanup(passon, passon.cleanup);
+
+            let status = 500;
+            if (err.status) {
+              status = err.status;
+            }
+            let msg = 'Internal error';
+            if (err.msg) {
+              msg = err.msg;
+            }
+            res.status(status).send(JSON.stringify({ err: msg }));
         });
     });
 

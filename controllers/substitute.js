@@ -41,9 +41,11 @@ var Compendium = require('../lib/model/compendium');
  function getMetadata (passon) {
     return new Promise((fulfill, reejct) => {
         debug('[%s] Requesting metadata of base compendium with id [%s] ...', passon.id, passon.metadata.substitution.base);
+
         Compendium.findOne({ id: passon.metadata.substitution.base}, function (err, res) {
             if (err) {
                 debug('[%s] Error requesting metadata of base Compendium.'. passon.id);
+                passon.cleanup = "noCleanup";
                 reject('Error requesting metadata of base compendium with id [%s].', passon.metadata.substitution.base);
             } else {
                 debug('Response of metadata');
@@ -66,6 +68,7 @@ function createFolder(passon) {
             fse.mkdirsSync(outputPath);
         } catch(err) {
             debug('[%s] Error creating directory for new compendium id: %s', passon.id, err);
+            passon.cleanup = "noCleanup";
             reject('Error creating directory for new compendium id: \n' + err);
         }
         debug('[%s] Created folder for new compendium in: \n%s\n', passon.id, outputPath);
@@ -92,6 +95,7 @@ function copyBaseFiles(passon) {
             fulfill(passon);
         } catch(err) {
             debug('Error copying base files to directory of new compendium - id: %s', err);
+            passon.cleanup = "folderCleanup";
             reject('Error copying base files to directory of new compendium: \n' + err);
         }
     });
@@ -123,6 +127,7 @@ function copyOverlayFiles(passon) {
                       substFiles[i].filename = newoverlayfilename;
                   } catch(err) {
                       debug('Error copying overlay files to directory of new compendium - id: %s', err);
+                      passon.cleanup = "folderCleanup";
                       reject('Error copying overlay files to directory of new compendium: \n' + err);
                   }
           }
@@ -150,6 +155,7 @@ function saveToDB(passon) {
         compendium.save(error => {
             if (error) {
                 debug('[%s] ERROR saving new compendium for user: %s', passon.id, passon.user);
+                passon.cleanup = "dockerCleanup";
                 error.msg = JSON.stringify({ error: 'internal error' });
                 error.status = 500;
                 reject(error);
@@ -203,6 +209,7 @@ function saveToDB(passon) {
         debug('[%s] Starting docker container ...');
         if (!passon.docker.imageTag) {
             debug('[%s] image tag was not passed.');
+            passon.cleanup = "folderCleanup";
             reject(new Error('image tag was not passed on!'));
         }
 
@@ -221,6 +228,7 @@ function saveToDB(passon) {
 
         if (!passon.docker.binds) {
             debug('[%s] volume binds were not passed.');
+            passon.cleanup = "folderCleanup";
             reject(new Error('volume binds were not passed!'));
         } else {
             debug('Run docker image with binds: \n%s', JSON.stringify(passon.docker.binds));
@@ -247,11 +255,27 @@ function saveToDB(passon) {
                 fulfill(passon);
             }).catch(function(err) {
                 debug('[DOCKER] error: %s', err);
+                container.remove();
                 reject(new Error(err));
             });
         }
     });
  }
+
+ function cleanup(passon, index) {
+    debug('[%s] Starting cleanup ...', passon.id);
+    switch(index) {
+        case 'noCleanup':
+            debug('no cleanup necessary.');
+        break;
+        case 'folderCleanup':
+            debug('[%s] Cleanup running ...', passon.id);
+            let cleanupPath = path.join(config.fs.compendium, passon.id);
+            fse.removeSync(cleanupPath);
+        break;
+    }
+    debug('[%s] Finished cleanup.', passon.id);
+ };
 
 module.exports = {
     // checkNewId: checkNewId,
@@ -262,5 +286,6 @@ module.exports = {
     // runAnalysis: runAnalysis,
     saveToDB: saveToDB,
     createDockerImage: createDockerImage,
-    startDockerContainer: startDockerContainer
+    startDockerContainer: startDockerContainer,
+    cleanup: cleanup
 };
