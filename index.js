@@ -149,9 +149,12 @@ function initApp(callback) {
         .then(substitute.createFolder)         // create folder with id
         .then(substitute.copyBaseFiles)       // copy base files into folder
         .then(substitute.copyOverlayFiles)    // copy overlay files into folder
+        .then(substitute.createDockerImage)   // TODO: later not necessary
+        .then(substitute.startDockerContainer)  // run docker container with given image
         .then(substitute.saveToDB)             // save to DB
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);
+            console.log(passon);
             res.status(200).send(passon);
         })
         .catch(err => {
@@ -166,25 +169,6 @@ function initApp(callback) {
             // }
             // res.status(status).send(JSON.stringify({ err: msg }));
         });
-    });
-
-    app.get('/api/v1/substitution/run/:id', (req, res) => {
-      console.log(req.params.id);
-      let passon = {
-        id: req.params.id,
-      };
-      debug('[%s] Starting run analysis ...', passon.id);
-      return substitute.createDockerImage(passon)
-        .then(substitute.startDockerContainer)
-        .then((passon) => {
-          debug('[%s] Finished run analysis.', passon.id);
-          res.status(200).send(passon);
-      })
-      .catch(err => {
-          console.log("err");
-          console.log(err);
-          debug('[%s] - Error during run analysis', passon.id, JSON.stringify(err));
-      });
     });
 
     // GET ilst of subtsitutions

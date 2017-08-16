@@ -197,24 +197,6 @@ function saveToDB(passon) {
  function startDockerContainer(passon) {
     return new Promise((fulfill, reject) => {
 
-        passon.metadata = {};
-        substitutionFiles = new Array();
-        var array1 = {
-            base: "BerlinMit.csv",
-            overlay: "BerlinOhne.csv",
-            filename: "overlay_BerlinOhne.csv"
-        };
-        substitutionFiles.push(array1);
-        var substitution = {
-            base: "AOD79",
-            overlay: "DNj1p",
-            substitutionFiles: substitutionFiles
-        };
-        passon.metadata = {
-          substituted: true,
-          substitution: substitution
-        };
-
         // setup Docker client with default options
         var docker = new Docker();
         // debug('Docker client set up: %s', JSON.stringify(docker));
@@ -232,30 +214,24 @@ function saveToDB(passon) {
         let baseBind = config.fs.compendium + passon.id + '/data' + ":" + "/erc";
         containerBinds.push(baseBind);
         for (let i=0; i< substFiles.length; i++) {
-            // volumemount = volumemount + " -v " + passon.o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base;
             let bind = passon.o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
-            // let bind = passon.o2rPath + substFiles[i].filename + ":" + passon.o2rPath + substFiles[i].base;
             containerBinds.push(bind);
         }
         passon.docker.binds = containerBinds;
 
         if (!passon.docker.binds) {
-            debug('[%s] volume binds was not passed.');
-            reject(new Error('volume binds was not passed!'));
+            debug('[%s] volume binds were not passed.');
+            reject(new Error('volume binds were not passed!'));
         } else {
-            debug('Run docker image with binds: %s', JSON.stringify(passon.docker.binds));
+            debug('Run docker image with binds: \n%s', JSON.stringify(passon.docker.binds));
 
-            // docker.run(...);
             let create_options = clone(config.bagtainer.docker.create_options);
             let start_options = clone(config.bagtainer.docker.start_options);
             debug('Starting Docker container now with options:\n\tcreate_options: %s\n\tstart_options: %s', JSON.stringify(create_options), JSON.stringify(start_options));
 
             docker.run(passon.docker.imageTag, [], process.stdout, {
-              Volumes: {
-                '/erc' : {}
-              },
               "HostConfig": {
-                "Binds": [baseBind]
+                "Binds": containerBinds
               }
             }).then(function(container) {
                 debug('Container StatusCode: %s', container.output.StatusCode);
@@ -263,10 +239,11 @@ function saveToDB(passon) {
                     debug('[%s] Creating container finished.', passon.id);
                     passon.docker.containerID = container.id;
                     debug('removing container %s ...', container.id);
-                    // return container.remove();
+                    return container.remove();
                 }
             }).then(function(data) {
-                debug('container removed');
+                // data === "" --> typeof(data) === String
+                debug('Container has been removed');
                 fulfill(passon);
             }).catch(function(err) {
                 debug('[DOCKER] error: %s', err);
