@@ -17,7 +17,7 @@
 
 const config = require('./config/config');
 config.version = require('./package.json').version;
-const debug = require('debug')('subsituter');
+const debug = require('debug')('substituter');
 const mongoose = require('mongoose');
 const backoff = require('backoff');
 
@@ -25,7 +25,8 @@ const backoff = require('backoff');
 const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.base);
 fse.mkdirsSync(config.fs.compendium);
-const fs = require('fs');
+// const fs = require('fs');
+const yaml = require('js-yaml');
 // const dirTree = require('directory-tree');
 
 const dbURI = config.mongo.location + config.mongo.database;
@@ -151,6 +152,7 @@ function initApp(callback) {
         .then(substitute.copyOverlayFiles)    // copy overlay files into folder
         .then(substitute.createDockerImage)   // TODO: later not necessary
         .then(substitute.startDockerContainer)  // run docker container with given image
+        .then(substitute.writeYaml)             // write docker run cmd to erc.yml
         .then(substitute.saveToDB)             // save to DB
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);
@@ -160,6 +162,38 @@ function initApp(callback) {
         .catch(err => {
             debug('[%s] - Error during substitution', passon.id, JSON.stringify(err));
             substitute.cleanup(passon, passon.cleanup);
+
+            let status = 500;
+            if (err.status) {
+              status = err.status;
+            }
+            let msg = 'Internal error';
+            if (err.msg) {
+              msg = err.msg;
+            }
+            res.status(status).send(JSON.stringify({ err: msg }));
+        });
+    });
+
+    // GET erc.yml --> test with local files
+    app.get('/api/v1/substitution/run/:id', function (req, res) {
+      console.log("Test js-yaml");
+      console.log(req.params.id);
+        // Get document, or throw exception on error
+        passon = {
+          id: "12345",
+          yaml: {
+            path: "/home/torben/Dokumente/testercyml/erc02.yml"
+          }
+        }
+        substitute.writeYaml(passon)
+        .then((passon) => {
+            debug('Finished yaml. \n %s', passon.yaml.path);
+            console.log(passon);
+            res.status(200).send(passon);
+        })
+        .catch(err => {
+            debug('Error during yaml: \n %s', JSON.stringify(err));
 
             let status = 500;
             if (err.status) {

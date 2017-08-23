@@ -1,4 +1,4 @@
-# o2r-subsituter
+# o2r-substituter
 
 Node.js implementation to load compendia from third party repositories and handle direct user uploads for the [o2r web api](http://o2r.info/o2r-web-api).
 

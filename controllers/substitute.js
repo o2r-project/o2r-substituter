@@ -17,7 +17,7 @@
 
 
 const config = require('../config/config');
-const debug = require('debug')('subsituter');
+const debug = require('debug')('substituter');
 const path = require('path');
 const exec = require('child_process').exec;
 const errorMessageHelper = require('../lib/error-message');
@@ -31,6 +31,8 @@ const fse = require('fs-extra');
 // fse.mkdirsSync(config.fs.base);
 // fse.mkdirsSync(config.fs.incoming);
 // fse.mkdirsSync(config.fs.compendium);
+const yaml = require('js-yaml');
+const writeyaml = require('write-yaml');
 
 var Compendium = require('../lib/model/compendium');
 
@@ -183,7 +185,7 @@ function saveToDB(passon) {
       debug('[%s] Docker client set up.', passon.id);
 
       docker.buildImage({
-        context: "/tmp/o2r-dev/compendium/sVAYJ3/data/",
+        context: passon.substitutedPath,
         src: ['Dockerfile', "main.Rmd", "BerlinMit.csv", "erc.yml"]
       }, {t: imagetitle}, function (err, response) {
           if (err) debug(err)
@@ -215,16 +217,24 @@ function saveToDB(passon) {
 
         debug('[%s] Starting docker container with image [%s] ...',passon.id, passon.docker.imageTag);
         let substFiles = passon.metadata.substitution.substitutionFiles;
-        passon.o2rPath = config.fs.compendium + passon.id + '/data/'; //TODO: check if anywhere else saved in passon
-        let volumemount = "";
+        let o2rPath = passon.substitutedPath + '/'; //TODO: check if anywhere else saved in passon
+        // for running docker
         let containerBinds = new Array();
         let baseBind = config.fs.compendium + passon.id + '/data' + ":" + "/erc";
         containerBinds.push(baseBind);
+        // for erc.yml
+        let cmdBinds = new Array();
+        let cmdBaseBind = "-v " + baseBind;
+        cmdBinds.push(cmdBaseBind);
         for (let i=0; i< substFiles.length; i++) {
-            let bind = passon.o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
+            let bind = o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
             containerBinds.push(bind);
+            let cmdBind = "-v " + bind;
+            cmdBinds.push(cmdBind);
         }
         passon.docker.binds = containerBinds;
+        passon.yaml = {};
+        passon.yaml.binds = cmdBinds;
 
         if (!passon.docker.binds) {
             debug('[%s] volume binds were not passed.');
@@ -262,6 +272,10 @@ function saveToDB(passon) {
     });
  }
 
+ /**
+  * function for cleanup after error is detected
+  * @param {object} passon - compendium id and data of compendia
+  */
  function cleanup(passon, index) {
     debug('[%s] Starting cleanup ...', passon.id);
     switch(index) {
@@ -277,15 +291,52 @@ function saveToDB(passon) {
     debug('[%s] Finished cleanup.', passon.id);
  };
 
+ /**
+  * function to read erc.yml and overwrite with execution command for "docker run"
+  * @param {object} passon - compendium id and data of compendia
+  */
+ function writeYaml(passon) {
+   return new Promise((fulfill, reject) => {
+      debug('[%s] Starting write yaml ...', passon.id);
+       try {
+          let yamlPath = passon.substitutedPath + '/erc.yml';
+          let dockerCmd = "docker run -it --rm";
+          let yamlBinds = passon.yaml.binds;
+          for (let i=0; i<yamlBinds.length; i++) {
+              dockerCmd = dockerCmd + " " + passon.yaml.binds[i];
+          }
+          let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
+          debug('[%s] Old erc.yml file: \n %s', passon.id, yaml.dump(doc));
+          debug('[%s] Old erc.yml file: \n %s', passon.id, JSON.stringify(doc));
+          if (!doc.execution) {
+              doc.execution = {};
+          }
+          doc.execution.cmd = "'" + dockerCmd + " " + passon.docker.imageTag + "'";
+          debug('[%s] New erc.yml file: \n %s', passon.id, yaml.dump(doc));
+          debug('[%s] New erc.yml file: \n %s', passon.id, JSON.stringify(doc));
+          writeyaml.sync(yamlPath, doc, function(err) {
+              debug("[%s] Error writing erc.yml in: %s", passon.id, yamlPath);
+              passon.cleanup = "folderCleanup";
+              reject("Error writing erc.yml in: %s", yamlPath);
+          });
+          fulfill(passon);
+     } catch(err) {
+          debug("[%s] Error writing erc.yml - err: %s", passon.id, err);
+          passon.cleanup = "folderCleanup";
+          reject("Error writing erc.yml in: %s", yamlPath);
+     }
+   })
+ };
+
 module.exports = {
     // checkNewId: checkNewId,
     getMetadata: getMetadata,
     createFolder: createFolder,
     copyBaseFiles: copyBaseFiles,
     copyOverlayFiles: copyOverlayFiles,
-    // runAnalysis: runAnalysis,
     saveToDB: saveToDB,
     createDockerImage: createDockerImage,
     startDockerContainer: startDockerContainer,
-    cleanup: cleanup
+    cleanup: cleanup,
+    writeYaml: writeYaml
 };
