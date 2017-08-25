@@ -1,0 +1,125 @@
+{
+    "access_right": "open",
+    "author": [
+        {
+            "address": "First Geo1 Second line\n",
+            "affiliation": "University/Company",
+            "email": "name@wwu.de",
+            "name": "Torben Kraft",
+            "orcid": "0000-0002-5731-5885",
+            "url": "http://rstudio.com"
+        },
+        {
+            "affiliation": "Affiliation",
+            "name": "Second Author",
+            "orcid": "0000-0002-4869-7797"
+        }
+    ],
+    "codefiles": [],
+    "communities": [
+        {
+            "identifier": "o2r"
+        }
+    ],
+    "depends": [],
+    "description": "Abstract mit berlin abstract\n",
+    "ercIdentifier": "AOD79",
+    "file": {
+        "filename": "main.Rmd",
+        "filepath": "AOD79/data/main.Rmd",
+        "mimetype": "text/markdown"
+    },
+    "generatedBy": "o2r-meta metaextract.py",
+    "identifier": {
+        "doi": "10.1007/bf01246610",
+        "doiurl": "https://doi.org/10.1007/bf01246610",
+        "reserveddoi": null
+    },
+    "inputfiles": [
+        "AOD79/data/BerlinMit.csv"
+    ],
+    "interaction": {
+        "interactive": false,
+        "ui_binding": {
+            "code": {
+                "filename": null,
+                "function": null,
+                "functionParameter": null,
+                "shinyInputFunction": null,
+                "shinyRenderFunction": null
+            },
+            "purpose": null,
+            "variable": null,
+            "widget": null
+        }
+    },
+    "keywords": [
+        "mit"
+    ],
+    "license": {
+        "code": null,
+        "data": null,
+        "text": "cc-by",
+        "uibindings": null
+    },
+    "paperLanguage": [],
+    "paperSource": "main.Rmd",
+    "publicationDate": "2017-08-10",
+    "publication_type": "other",
+    "r_comment": [
+        {
+            "feature": "comment",
+            "line": 4,
+            "text": "csv"
+        },
+        {
+            "feature": "comment",
+            "line": 7,
+            "text": "meineDaten"
+        }
+    ],
+    "r_input": [
+        {
+            "feature": "data input",
+            "line": 3,
+            "text": "BerlinMit.csv"
+        }
+    ],
+    "r_output": [
+        {
+            "feature": "result",
+            "line": 24,
+            "text": "plot"
+        },
+        {
+            "feature": "result",
+            "line": 31,
+            "text": "plot"
+        },
+        {
+            "feature": "result",
+            "line": 37,
+            "text": "plot"
+        },
+        {
+            "feature": "result",
+            "line": 43,
+            "text": "plot"
+        }
+    ],
+    "r_rdata": [],
+    "recordDateCreated": "2017-08-10",
+    "researchHypotheses": [],
+    "researchQuestions": [],
+    "softwarePaperCitation": null,
+    "spatial": {},
+    "temporal": {
+        "begin": null,
+        "end": null
+    },
+    "title": "base01 - Mit Berlin",
+    "upload_type": "publication",
+    "version": null,
+    "viewfile": null,
+    "viewfiles": []
+}

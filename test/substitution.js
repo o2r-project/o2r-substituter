@@ -25,7 +25,21 @@ require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
 const requestLoadingTimeout = 10000;
 const createCompendiumPostRequest = require('./util').createCompendiumPostRequest;
+const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 
+describe('List all substitutions', function () {
+    describe('GET /api/v1/substitutions response with list of ERC ids', () => {
+      it('should respond with HTTP 200 OK', (done) => {
+          request(global.test_host + '/api/v1/substitutions', (err, res, body) => {
+                  assert.ifError(err);
+                  console.log("body");
+                  console.log(body);
+                  assert.equal(res.statusCode, 200);
+                  done();
+          });
+      });
+    });
+});
 
 describe('Simple substitution of data', function () {
     describe('POST /api/v1/substitution response with new ERC id', () => {

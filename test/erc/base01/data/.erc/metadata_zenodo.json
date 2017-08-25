@@ -1,0 +1,32 @@
+{
+    "access_right": "open",
+    "communities": [
+        {
+            "identifier": "o2r"
+        }
+    ],
+    "creators": [
+        {
+            "affiliation": "University/Company",
+            "name": "Torben Kraft"
+        },
+        {
+            "affiliation": "Affiliation",
+            "name": "Second Author"
+        }
+    ],
+    "description": "Abstract mit berlin abstract\n",
+    "keywords": [
+        "mit"
+    ],
+    "license": {
+        "code": null,
+        "data": null,
+        "text": "cc-by",
+        "uibindings": null
+    },
+    "publication_date": "2017-08-10",
+    "publication_type": "other",
+    "title": "base01 - Mit Berlin",
+    "upload_type": "publication"
+}

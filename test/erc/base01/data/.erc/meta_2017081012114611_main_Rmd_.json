@@ -1,0 +1,74 @@
+{
+    "abstract": "Abstract mit berlin abstract\n",
+    "author": [
+        {
+            "address": "First Geo1 Second line\n",
+            "affiliation": "University/Company",
+            "email": "name@wwu.de",
+            "name": "Torben Kraft",
+            "orcid": "0000-0002-5731-5885",
+            "url": "http://rstudio.com"
+        },
+        {
+            "affiliation": "Affiliation",
+            "name": "Second Author",
+            "orcid": "0000-0002-4869-7797"
+        }
+    ],
+    "depends": [],
+    "ercIdentifier": "AOD79",
+    "file": {
+        "filename": "main.Rmd",
+        "filepath": "AOD79/data/main.Rmd",
+        "mimetype": "text/markdown"
+    },
+    "keywords": [
+        "mit"
+    ],
+    "output": "rticles::jss_article",
+    "paperLanguage": [],
+    "preamble": "\\usepackage{amsmath}\n",
+    "r_comment": [
+        {
+            "feature": "comment",
+            "line": 4,
+            "text": "csv"
+        },
+        {
+            "feature": "comment",
+            "line": 7,
+            "text": "meineDaten"
+        }
+    ],
+    "r_input": [
+        {
+            "feature": "data input",
+            "line": 3,
+            "text": "BerlinMit.csv"
+        }
+    ],
+    "r_output": [
+        {
+            "feature": "result",
+            "line": 24,
+            "text": "plot"
+        },
+        {
+            "feature": "result",
+            "line": 31,
+            "text": "plot"
+        },
+        {
+            "feature": "result",
+            "line": 37,
+            "text": "plot"
+        },
+        {
+            "feature": "result",
+            "line": 43,
+            "text": "plot"
+        }
+    ],
+    "recordDateCreated": "2017-08-10",
+    "title": "base01 - Mit Berlin"
+}
