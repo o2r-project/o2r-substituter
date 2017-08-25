@@ -43,7 +43,9 @@ const responseTime = require('response-time');
 const bodyParser = require('body-parser');
 const randomstring = require('randomstring');
 
-const substitute = require('./controllers/substitute');
+var controllers = {};
+controllers.substitute = require('./controllers/substitute');
+controllers.substitutions = require('./controllers/substitutions');
 
 // code which is executed on every request
 app.use(function(req, res, next) {
@@ -146,14 +148,14 @@ function initApp(callback) {
         }
       };
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
-      return substitute.getMetadata(passon)    // get metadata
-        .then(substitute.createFolder)         // create folder with id
-        .then(substitute.copyBaseFiles)       // copy base files into folder
-        .then(substitute.copyOverlayFiles)    // copy overlay files into folder
-        .then(substitute.createDockerImage)   // TODO: later not necessary
-        .then(substitute.startDockerContainer)  // run docker container with given image
-        .then(substitute.writeYaml)             // write docker run cmd to erc.yml
-        .then(substitute.saveToDB)             // save to DB
+      return controllers.substitute.getMetadata(passon)    // get metadata
+        .then(controllers.substitute.createFolder)         // create folder with id
+        .then(controllers.substitute.copyBaseFiles)       // copy base files into folder
+        .then(controllers.substitute.copyOverlayFiles)    // copy overlay files into folder
+        .then(controllers.substitute.createDockerImage)   // TODO: later not necessary
+        .then(controllers.substitute.startDockerContainer)  // run docker container with given image
+        .then(controllers.substitute.writeYaml)             // write docker run cmd to erc.yml
+        .then(controllers.substitute.saveToDB)             // save to DB
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);
             console.log(passon);
@@ -161,7 +163,6 @@ function initApp(callback) {
         })
         .catch(err => {
             debug('[%s] - Error during substitution', passon.id, JSON.stringify(err));
-            substitute.cleanup(passon, passon.cleanup);
 
             let status = 500;
             if (err.status) {
@@ -175,42 +176,10 @@ function initApp(callback) {
         });
     });
 
-    // GET erc.yml --> test with local files
-    app.get('/api/v1/substitution/run/:id', function (req, res) {
-      console.log("Test js-yaml");
-      console.log(req.params.id);
-        // Get document, or throw exception on error
-        passon = {
-          id: "12345",
-          yaml: {
-            path: "/home/torben/Dokumente/testercyml/erc02.yml"
-          }
-        }
-        substitute.writeYaml(passon)
-        .then((passon) => {
-            debug('Finished yaml. \n %s', passon.yaml.path);
-            console.log(passon);
-            res.status(200).send(passon);
-        })
-        .catch(err => {
-            debug('Error during yaml: \n %s', JSON.stringify(err));
+    // GET list of subtsitutions
+    app.get('/api/v1/substitutions', controllers.substitutions.view);
 
-            let status = 500;
-            if (err.status) {
-              status = err.status;
-            }
-            let msg = 'Internal error';
-            if (err.msg) {
-              msg = err.msg;
-            }
-            res.status(status).send(JSON.stringify({ err: msg }));
-        });
-    });
-
-    // GET ilst of subtsitutions
-    // app.get('/api/v1/substitutions');
-
-    // GET list fo realted substitutions by filter "base" and/or "overlay"
+    // GET list of related substitutions by filter "base" and/or "overlay"
     // app.get('/api/v1/substitutions/?base...&overlay=---');
 
     app.listen(config.net.port, () => {

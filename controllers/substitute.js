@@ -47,7 +47,6 @@ var Compendium = require('../lib/model/compendium');
         Compendium.findOne({ id: passon.metadata.substitution.base}, function (err, res) {
             if (err) {
                 debug('[%s] Error requesting metadata of base Compendium.'. passon.id);
-                passon.cleanup = "noCleanup";
                 reject('Error requesting metadata of base compendium with id [%s].', passon.metadata.substitution.base);
             } else {
                 debug('Response of metadata');
@@ -70,7 +69,6 @@ function createFolder(passon) {
             fse.mkdirsSync(outputPath);
         } catch(err) {
             debug('[%s] Error creating directory for new compendium id: %s', passon.id, err);
-            passon.cleanup = "noCleanup";
             reject('Error creating directory for new compendium id: \n' + err);
         }
         debug('[%s] Created folder for new compendium in: \n%s\n', passon.id, outputPath);
@@ -97,7 +95,7 @@ function copyBaseFiles(passon) {
             fulfill(passon);
         } catch(err) {
             debug('Error copying base files to directory of new compendium - id: %s', err);
-            passon.cleanup = "folderCleanup";
+            cleanup(passon);
             reject('Error copying base files to directory of new compendium: \n' + err);
         }
     });
@@ -120,6 +118,7 @@ function copyOverlayFiles(passon) {
                 fulfill(passon);
             } else {
                 debug('[%s] copied files: %s', passon.id, (i+1));
+                // TODO: Unterordner! --> str.lastIndexOf("\") || str.lastIndexOf("/")
                 let basefile = passon.substitutedPath + '/' + substFiles[i].base;
                 let overlayfile = passon.overlayPath + '/' + substFiles[i].overlay;
                   try {
@@ -129,7 +128,7 @@ function copyOverlayFiles(passon) {
                       substFiles[i].filename = newoverlayfilename;
                   } catch(err) {
                       debug('Error copying overlay files to directory of new compendium - id: %s', err);
-                      passon.cleanup = "folderCleanup";
+                      cleanup(passon);
                       reject('Error copying overlay files to directory of new compendium: \n' + err);
                   }
           }
@@ -157,7 +156,7 @@ function saveToDB(passon) {
         compendium.save(error => {
             if (error) {
                 debug('[%s] ERROR saving new compendium for user: %s', passon.id, passon.user);
-                passon.cleanup = "dockerCleanup";
+                cleanup(passon);
                 error.msg = JSON.stringify({ error: 'internal error' });
                 error.status = 500;
                 reject(error);
@@ -188,7 +187,10 @@ function saveToDB(passon) {
         context: passon.substitutedPath,
         src: ['Dockerfile', "main.Rmd", "BerlinMit.csv", "erc.yml"]
       }, {t: imagetitle}, function (err, response) {
-          if (err) debug(err)
+          if (err) {
+              cleanup(passon);
+              debug(err)
+          }
           debug('# \n # \n Creating docker  image finished. \n # \n #');
           passon.docker = {};
           passon.docker.imageTag = imagetitle;
@@ -211,7 +213,7 @@ function saveToDB(passon) {
         debug('[%s] Starting docker container ...');
         if (!passon.docker.imageTag) {
             debug('[%s] image tag was not passed.');
-            passon.cleanup = "folderCleanup";
+            cleanup(passon);
             reject(new Error('image tag was not passed on!'));
         }
 
@@ -238,7 +240,7 @@ function saveToDB(passon) {
 
         if (!passon.docker.binds) {
             debug('[%s] volume binds were not passed.');
-            passon.cleanup = "folderCleanup";
+            cleanup(passon);
             reject(new Error('volume binds were not passed!'));
         } else {
             debug('Run docker image with binds: \n%s', JSON.stringify(passon.docker.binds));
@@ -266,6 +268,7 @@ function saveToDB(passon) {
             }).catch(function(err) {
                 debug('[DOCKER] error: %s', err);
                 container.remove();
+                cleanup(passon);
                 reject(new Error(err));
             });
         }
@@ -276,19 +279,17 @@ function saveToDB(passon) {
   * function for cleanup after error is detected
   * @param {object} passon - compendium id and data of compendia
   */
- function cleanup(passon, index) {
+ function cleanup(passon) {
     debug('[%s] Starting cleanup ...', passon.id);
-    switch(index) {
-        case 'noCleanup':
-            debug('no cleanup necessary.');
-        break;
-        case 'folderCleanup':
-            debug('[%s] Cleanup running ...', passon.id);
-            let cleanupPath = path.join(config.fs.compendium, passon.id);
-            fse.removeSync(cleanupPath);
-        break;
-    }
-    debug('[%s] Finished cleanup.', passon.id);
+    // try {
+    //     debug('[%s] Cleanup running ...', passon.id);
+    //     let cleanupPath = path.join(config.fs.compendium, passon.id);
+    //     fse.removeSync(cleanupPath);
+    //     debug('[%s] Finished cleanup.', passon.id);
+    //   } catch (err) {
+    //     debug(err);
+    //     debug('Cleanup not successfull.');
+    //   }
  };
 
  /**
@@ -307,22 +308,20 @@ function saveToDB(passon) {
           }
           let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
           debug('[%s] Old erc.yml file: \n %s', passon.id, yaml.dump(doc));
-          debug('[%s] Old erc.yml file: \n %s', passon.id, JSON.stringify(doc));
           if (!doc.execution) {
               doc.execution = {};
           }
           doc.execution.cmd = "'" + dockerCmd + " " + passon.docker.imageTag + "'";
           debug('[%s] New erc.yml file: \n %s', passon.id, yaml.dump(doc));
-          debug('[%s] New erc.yml file: \n %s', passon.id, JSON.stringify(doc));
           writeyaml.sync(yamlPath, doc, function(err) {
-              debug("[%s] Error writing erc.yml in: %s", passon.id, yamlPath);
-              passon.cleanup = "folderCleanup";
+              debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
+              cleanup(passon);
               reject("Error writing erc.yml in: %s", yamlPath);
           });
           fulfill(passon);
      } catch(err) {
           debug("[%s] Error writing erc.yml - err: %s", passon.id, err);
-          passon.cleanup = "folderCleanup";
+          cleanup(passon);
           reject("Error writing erc.yml in: %s", yamlPath);
      }
    })

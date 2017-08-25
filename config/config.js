@@ -40,6 +40,10 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r-dev/'; // '/tmp/o2r/'
 c.fs.compendium = c.fs.base + 'compendium/';
 
+// metadata extraction and brokering options
+c.meta = {};
+c.meta.doiPath = 'metadata.o2r.identifier.doi';
+
 // docker commands
 c.docker = {};
 
