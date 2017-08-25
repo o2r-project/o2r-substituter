@@ -41,19 +41,35 @@ var Compendium = require('../lib/model/compendium');
  * @param {object} passon - new compendium id and data of origin compendia
  */
  function getMetadata (passon) {
-    return new Promise((fulfill, reejct) => {
+    return new Promise((fulfill, reject) => {
         debug('[%s] Requesting metadata of base compendium with id [%s] ...', passon.id, passon.metadata.substitution.base);
-
-        Compendium.findOne({ id: passon.metadata.substitution.base}, function (err, res) {
-            if (err) {
-                debug('[%s] Error requesting metadata of base Compendium.'. passon.id);
-                reject('Error requesting metadata of base compendium with id [%s].', passon.metadata.substitution.base);
-            } else {
-                debug('Response of metadata');
-                passon.baseMetaData = res.metadata;
-                fulfill(passon);
-            }
-        });
+        try {
+            Compendium.findOne({ id: passon.metadata.substitution.base}, function (err, res) {
+                if (err) {
+                    debug('[%s] Error requesting metadata of base Compendium.', passon.id);
+                    err.status = 400;
+                    err.msg = 'base ERC not found';
+                    reject(err);
+                } else {
+                    if (!res || res == null) {
+                      debug('[%s] Error requesting metadata of base Compendium.', passon.id);
+                      let err = new Error();
+                      err.status = 400;
+                      err.msg = 'base ERC not found';
+                      reject(err);
+                    } else {
+                      debug('Response of metadata');
+                      passon.baseMetaData = res.metadata;
+                      fulfill(passon);
+                    }
+                }
+            });
+        } catch(err) {
+            debug('[%s] Error requesting metadata of base Compendium.', passon.id);
+            err.status = 400;
+            err.msg = 'base ERC not found';
+            reject(err);
+        }
     })
  }
 
@@ -96,7 +112,9 @@ function copyBaseFiles(passon) {
         } catch(err) {
             debug('Error copying base files to directory of new compendium - id: %s', err);
             cleanup(passon);
-            reject('Error copying base files to directory of new compendium: \n' + err);
+            err.status = 400;
+            err.msg = 'base path does not exist';
+            reject(err);
         }
     });
 }
@@ -127,9 +145,11 @@ function copyOverlayFiles(passon) {
                       fse.copySync(overlayfile, newoverlayfilepath);  //TODO: check if name is copied too
                       substFiles[i].filename = newoverlayfilename;
                   } catch(err) {
-                      debug('Error copying overlay files to directory of new compendium - id: %s', err);
+                      debug('[%s]Error copying overlay files to directory of new compendium: \n %s', passon.id, err);
                       cleanup(passon);
-                      reject('Error copying overlay files to directory of new compendium: \n' + err);
+                      err.status = 400;
+                      err.msg = 'overlay path does not exist: ' + err.path;
+                      reject(err);
                   }
           }
         }
@@ -281,15 +301,15 @@ function saveToDB(passon) {
   */
  function cleanup(passon) {
     debug('[%s] Starting cleanup ...', passon.id);
-    // try {
-    //     debug('[%s] Cleanup running ...', passon.id);
-    //     let cleanupPath = path.join(config.fs.compendium, passon.id);
-    //     fse.removeSync(cleanupPath);
-    //     debug('[%s] Finished cleanup.', passon.id);
-    //   } catch (err) {
-    //     debug(err);
-    //     debug('Cleanup not successfull.');
-    //   }
+    try {
+        debug('[%s] Cleanup running ...', passon.id);
+        let cleanupPath = path.join(config.fs.compendium, passon.id);
+        fse.removeSync(cleanupPath);
+        debug('[%s] Finished cleanup.', passon.id);
+      } catch (err) {
+        debug(err);
+        debug('Cleanup not successfull.');
+      }
  };
 
  /**

@@ -158,11 +158,11 @@ function initApp(callback) {
         .then(controllers.substitute.saveToDB)             // save to DB
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);
-            console.log(passon);
+            // console.log(passon);
             res.status(200).send(passon);
         })
         .catch(err => {
-            debug('[%s] - Error during substitution', passon.id, JSON.stringify(err));
+            debug('[%s] - Error during substitution \n %s', passon.id, JSON.stringify(err));
 
             let status = 500;
             if (err.status) {
