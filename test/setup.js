@@ -23,11 +23,10 @@ const config = require('../config/config');
 var orcid = '0000-0001-6021-1617';
 var sessionId = 'C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo';
 
-// parameters for upload of compendium
-var loader_host = 'http://localhost:' + '8088';
-
 var env = process.env;
 global.test_host = env.TEST_HOST ||  'http://localhost:' + config.net.port;
+global.test_host_read = env.TEST_HOST_READ ||  'http://localhost:8080';
+global.test_host_upload = env.TEST_HOST_UPLOAD ||  'http://localhost:8088';
 console.log('Testing endpoint at ' + global.test_host);
 
 before(function () {

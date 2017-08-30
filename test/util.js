@@ -42,7 +42,7 @@ function uploadCompendium(path, cookie) {
   j.setCookie(ck, global.test_host);
 
   let reqParams = {
-    uri: loader_host + '/api/v1/compendium',
+    uri: global.test_host_upload + '/api/v1/compendium',
     method: 'POST',
     jar: j,
     formData: formData,
@@ -67,7 +67,7 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
 
   let formData = {
     'content-type': 'application/json',
-    body: JSON.stringify(substitutionObject);
+    body: JSON.stringify(substitutionObject)
   }
 
   let j = request.jar();
