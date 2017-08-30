@@ -20,7 +20,7 @@ const tmp = require('tmp');
 const AdmZip = require('adm-zip');
 const fs = require('fs');
 
-function createCompendiumPostRequest(path, cookie) {
+function uploadCompendium(path, cookie) {
   var zip = new AdmZip();
   zip.addLocalFolder(path);
   var tmpfile = tmp.tmpNameSync() + '.zip';
@@ -42,7 +42,7 @@ function createCompendiumPostRequest(path, cookie) {
   j.setCookie(ck, global.test_host);
 
   let reqParams = {
-    uri: global.test_host + '/api/v1/compendium',
+    uri: loader_host + '/api/v1/compendium',
     method: 'POST',
     jar: j,
     formData: formData,
@@ -50,7 +50,41 @@ function createCompendiumPostRequest(path, cookie) {
   };
 
   return (reqParams);
-}
+};
+
+function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie) {
+
+  let substitutionObject = {
+    base: base_id,
+    overlay: overlay_id,
+    substitutionFiles: [
+      {
+        base: base_file,
+        overlay: overlay_file
+      }
+    ]
+  }
+
+  let formData = {
+    'content-type': 'application/json',
+    body: JSON.stringify(substitutionObject);
+  }
+
+  let j = request.jar();
+  let ck = request.cookie('connect.sid=' + cookie);
+  j.setCookie(ck, global.test_host);
+
+  let reqParams = {
+    uri: global.test_host + '/api/v1/substitution',
+    method: 'POST',
+    jar: j,
+    formData: formData,
+    timeout: 10000
+  };
+
+  return (reqParams);
+};
 
 
-module.exports.createCompendiumPostRequest = createCompendiumPostRequest;
+module.exports.uploadCompendium = uploadCompendium;
+module.exports.createSubstitutionPostRequest = createSubstitutionPostRequest;
