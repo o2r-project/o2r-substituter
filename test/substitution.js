@@ -23,18 +23,52 @@ const config = require('../config/config');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
-const requestLoadingTimeout = 10000;
+const requestLoadingTimeout = 30000;
 const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 
 describe('List all substitutions', function () {
+
+    before( function(done) {
+        let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
+        let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
+        var base_id_list;
+        var overlay_id_list;
+        var substituted_id_list;
+        let base_file_list = "BerlinMit.csv";
+        let overlay_file_list = "BerlinOhne.csv";
+
+        this.timeout(40000);
+
+        // first upload
+        request(req_base01, (err, res, body) => {
+            assert.ifError(err);
+            base_id_list = JSON.parse(body).id;
+
+            // second upload
+            request(req_overlay01, (err, res, body) => {
+              assert.ifError(err);
+              overlay_id_list = JSON.parse(body).id;
+
+              // substitution
+              let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
+              request(req_substitution, (err, res, body) => {
+                assert.ifError(err);
+                let response = body;
+                substituted_id_list = response.id;
+
+                done();
+              });
+            });
+        });
+        this.timeout(30000);
+    });
+
     describe('GET /api/v1/substitutions response with list of ERC ids', () => {
       it('should respond with HTTP 200 OK', (done) => {
           request(global.test_host + '/api/v1/substitutions', (err, res, body) => {
                   assert.ifError(err);
-                  console.log("body");
-                  console.log(body);
                   assert.equal(res.statusCode, 200);
                   done();
           });
@@ -43,16 +77,15 @@ describe('List all substitutions', function () {
 });
 
 describe('Simple substitution of data', function () {
+  // this.timeout(40000);
 
     var base_id;
     var overlay_id;
-    var substituted_id;
 
     before( function(done) {
         let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
         let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
-
-        this.timeout(10000);
+        this.timeout(40000);
 
         // first upload
         request(req_base01, (err, res, body) => {
@@ -63,19 +96,21 @@ describe('Simple substitution of data', function () {
             request(req_overlay01, (err, res, body) => {
               assert.ifError(err);
               overlay_id = JSON.parse(body).id;
+
               done();
             });
         });
-
-        this.timeout(10000);
+        this.timeout(30000);
     });
 
     // TODO: use two compendia (uploaded before) to run substitution
     describe('POST /api/v1/substitution with two valid ERCs', () => {
+        var substituted_id;
         let base_file = "BerlinMit.csv";
         let overlay_file = "BerlinOhne.csv";
 
         it('should respond with HTTP 200 OK', (done) => {
+
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
 
@@ -88,12 +123,13 @@ describe('Simple substitution of data', function () {
         }).timeout(requestLoadingTimeout);
 
         it('should respond with valid JSON', (done) => {
+
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    assert.isObject(JSON.parse(body), 'returned JSON');
+                    assert.isObject(body, 'returned JSON');
                     done();
                 });
             });
@@ -105,7 +141,7 @@ describe('Simple substitution of data', function () {
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    let response = JSON.parse(body);
+                    let response = body;
                     assert.property(response, 'id');
                     assert.isString(response.id);
                     substituted_id = response.id;
@@ -120,7 +156,7 @@ describe('Simple substitution of data', function () {
             let response = JSON.parse(body);
             assert.property(response, 'metadata');
             assert.property(response.metadata, 'substituted');
-            assert.propertyVal(response.metadata.substituted, 'substituted', 'true');
+            assert.propertyVal(response.metadata, 'substituted', true);
             done();
           });
         }).timeout(requestReadingTimeout);
@@ -131,6 +167,8 @@ describe('Simple substitution of data', function () {
             let response = JSON.parse(body);
             assert.property(response, 'metadata');
             assert.property(response.metadata, 'substitution');
+            assert.property(response.metadata.substitution, 'base');
+            assert.property(response.metadata.substitution, 'overlay');
             assert.propertyVal(response.metadata.substitution, 'base', base_id);
             assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
             done();
@@ -144,8 +182,11 @@ describe('Simple substitution of data', function () {
             assert.property(response, 'metadata');
             assert.property(response.metadata, 'substitution');
             assert.property(response.metadata.substitution, 'substitutionFiles');
-            assert.propertyVal(response.metadata.substitution.substitutionFiles, 'base', base_file);
-            assert.propertyVal(response.metadata.substitution.substitutionFiles, 'overlay', overlay_file);
+            console.log(response.metadata.substitution.substitutionFiles);
+            assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
+            assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
+            assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', base_file);
+            assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', overlay_file);
             done();
           });
         }).timeout(requestReadingTimeout);
@@ -153,9 +194,10 @@ describe('Simple substitution of data', function () {
     });
 
     describe('POST /api/v1/substitution with an overlay filename that already exists as an base filename', () => {
+        var substituted_id;
         let base_file = "main.Rmd";
         let overlay_file = "main.Rmd";
-        overlay_overlay_file = "overlay_" + overlay_file;
+        let overlay_overlay_file = "overlay_" + overlay_file;
 
         it('should respond with HTTP 200 OK', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
@@ -169,13 +211,41 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestLoadingTimeout);
 
+        it('should respond with valid JSON', (done) => {
+
+            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+
+                request(req, (err, res, body) => {
+                    assert.ifError(err);
+                    assert.isObject(body, 'returned JSON');
+                    done();
+                });
+            });
+        }).timeout(requestLoadingTimeout);
+
+        it('should respond with valid ID', (done) => {
+            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+
+                request(req, (err, res, body) => {
+                    assert.ifError(err);
+                    let response = body;
+                    assert.property(response, 'id');
+                    assert.isString(response.id);
+                    substituted_id = response.id;
+                    done();
+                });
+            });
+        }).timeout(requestLoadingTimeout);
+
         it('should respond with valid JSON - check metadata for: substituted', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
                 assert.property(response, 'metadata');
                 assert.property(response.metadata, 'substituted');
-                assert.propertyVal(response.metadata.substituted, 'substituted', 'true');
+                assert.propertyVal(response.metadata, 'substituted', true);
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -186,6 +256,8 @@ describe('Simple substitution of data', function () {
                 let response = JSON.parse(body);
                 assert.property(response, 'metadata');
                 assert.property(response.metadata, 'substitution');
+                assert.property(response.metadata.substitution, 'base');
+                assert.property(response.metadata.substitution, 'overlay');
                 assert.propertyVal(response.metadata.substitution, 'base', base_id);
                 assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
                 done();
@@ -199,9 +271,13 @@ describe('Simple substitution of data', function () {
                 assert.property(response, 'metadata');
                 assert.property(response.metadata, 'substitution');
                 assert.property(response.metadata.substitution, 'substitutionFiles');
-                assert.propertyVal(response.metadata.substitution.substitutionFiles, 'base', base_file);
-                assert.propertyVal(response.metadata.substitution.substitutionFiles, 'overlay', overlay_file);
-                assert.propertyVal(response.metadata.substitution.substitutionFiles, 'filename', overlay_overlay_file);
+                console.log(response.metadata.substitution.substitutionFiles);
+                assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
+                assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
+                assert.property(response.metadata.substitution.substitutionFiles[0], 'filename');
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', base_file);
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', overlay_file);
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', overlay_overlay_file);
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -220,7 +296,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'base ID is invalid');
+                    assert.include(body, 'base ID is invalid'); // TODO Uncaught TypeError: obj.indexOf is not a function
                     done();
                 });
             });
@@ -239,7 +315,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'overlay ID is invalid');
+                    assert.include(body, 'overlay ID is invalid'); // TODO Uncaught TypeError: obj.indexOf is not a function
                     done();
                 });
             });
@@ -257,7 +333,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'base filepath is invalid');
+                    assert.include(body, 'base filepath is invalid'); // TODO 200 to equal 400
                     done();
                 });
             });
@@ -275,7 +351,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'overlay filepath is invalid');
+                    assert.include(body, 'overlay filepath is invalid'); // TODO Uncaught TypeError: obj.indexOf is not a function
                     done();
                 });
             });
@@ -289,12 +365,12 @@ describe('Simple substitution of data', function () {
         it('should fail the substitution because of no substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
-                req.formData.body.substitutionFiles = [];   // set Array of substitutionFiles empty
+                req.json.substitutionFiles = [];   // set Array of substitutionFiles empty
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'substitution files do not exist');
+                    assert.include(body, 'substitution files do not exist'); // TODO 200 to equal 400
                     done();
                 });
             });
@@ -303,18 +379,19 @@ describe('Simple substitution of data', function () {
 
     describe('POST /api/v1/substitution with only base filename in substitution files', () => {
         let base_file = "BerlinMit.csv";
+        let overlay_file = "BerlinOhne.csv";
 
         it('should fail the substitution because of no overlay file in substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
-                req.formData.body.substitutionFiles = [{
-                    base: base_file
+                req.json.substitutionFiles = [{
+                    base: "BerlinMit.csv"
                 }];
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'substitution overlay file does not exist');
+                    assert.include(body, 'substitution overlay file does not exist'); // TODO Uncaught TypeError: obj.indexOf is not a function
                     done();
                 });
             });
@@ -322,23 +399,23 @@ describe('Simple substitution of data', function () {
     });
 
     describe('POST /api/v1/substitution with only overlay filename in substitution files', () => {
+        let base_file = "BerlinMit.csv";
         let overlay_file = "BerlinOhne.csv";
 
         it('should fail the substitution because of no base file in substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
-                req.formData.body.substitutionFiles = [{
-                    overlay: overlay_file
+                req.json.substitutionFiles = [{
+                    overlay: "BerlinOhne.csv"
                 }];
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'substitution base file does not exist');
+                    assert.include(body, 'substitution base file does not exist'); // TODO expected 200 to equal 400
                     done();
                 });
             });
         }).timeout(requestLoadingTimeout);
     });
-
 });

@@ -65,11 +65,6 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
     ]
   }
 
-  let formData = {
-    'content-type': 'application/json',
-    body: JSON.stringify(substitutionObject)
-  }
-
   let j = request.jar();
   let ck = request.cookie('connect.sid=' + cookie);
   j.setCookie(ck, global.test_host);
@@ -78,7 +73,7 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
     uri: global.test_host + '/api/v1/substitution',
     method: 'POST',
     jar: j,
-    formData: formData,
+    json: substitutionObject,
     timeout: 10000
   };
 
