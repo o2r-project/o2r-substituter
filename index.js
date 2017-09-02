@@ -148,7 +148,7 @@ function initApp(callback) {
         }
       };
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
-      return controllers.substitute.getMetadata(passon)    // get metadata
+      return controllers.substitute.getMetadata(passon)   // get metadata
         .then(controllers.substitute.createFolder)         // create folder with id
         .then(controllers.substitute.copyBaseFiles)       // copy base files into folder
         .then(controllers.substitute.copyOverlayFiles)    // copy overlay files into folder
@@ -159,7 +159,7 @@ function initApp(callback) {
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);
             // console.log(passon);
-            res.status(200).send(passon);
+            res.status(200).send({'id': passon.id});
         })
         .catch(err => {
             debug('[%s] - Error during substitution \n %s', passon.id, JSON.stringify(err));
@@ -182,12 +182,14 @@ function initApp(callback) {
     // GET list of related substitutions by filter "base" and/or "overlay"
     // app.get('/api/v1/substitutions/?base...&overlay=---');
 
-    app.listen(config.net.port, () => {
+    var server = app.listen(config.net.port, () => {
       debug('substituter %s with API version %s waiting for requests on port %s',
         config.version,
         config.api_version,
         config.net.port);
     });
+    server.timeout = 30000;
+
   } catch (err) {
     callback(err);
   }
