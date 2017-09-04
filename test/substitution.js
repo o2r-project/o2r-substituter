@@ -39,7 +39,7 @@ describe('List all substitutions', function () {
         let base_file_list = "BerlinMit.csv";
         let overlay_file_list = "BerlinOhne.csv";
 
-        this.timeout(40000);
+        this.timeout(0);
 
         // first upload
         request(req_base01, (err, res, body) => {
@@ -55,8 +55,7 @@ describe('List all substitutions', function () {
               let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
               request(req_substitution, (err, res, body) => {
                 assert.ifError(err);
-                let response = body;
-                substituted_id_list = response.id;
+                substituted_id_list = body.id;
 
                 done();
               });
@@ -103,7 +102,7 @@ describe('Simple substitution of data', function () {
         this.timeout(30000);
     });
 
-    // TODO: use two compendia (uploaded before) to run substitution
+    // use two compendia (uploaded before) to run substitution
     describe('POST /api/v1/substitution with two valid ERCs', () => {
         var substituted_id;
         let base_file = "BerlinMit.csv";
@@ -141,10 +140,9 @@ describe('Simple substitution of data', function () {
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    let response = body;
-                    assert.property(response, 'id');
-                    assert.isString(response.id);
-                    substituted_id = response.id;
+                    assert.property(body, 'id');
+                    assert.isString(body.id);
+                    substituted_id = body.id;
                     done();
                 });
             });
@@ -230,10 +228,9 @@ describe('Simple substitution of data', function () {
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    let response = body;
-                    assert.property(response, 'id');
-                    assert.isString(response.id);
-                    substituted_id = response.id;
+                    assert.property(body, 'id');
+                    assert.isString(body.id);
+                    substituted_id = body.id;
                     done();
                 });
             });
@@ -271,7 +268,6 @@ describe('Simple substitution of data', function () {
                 assert.property(response, 'metadata');
                 assert.property(response.metadata, 'substitution');
                 assert.property(response.metadata.substitution, 'substitutionFiles');
-                console.log(response.metadata.substitution.substitutionFiles);
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'filename');
@@ -281,7 +277,6 @@ describe('Simple substitution of data', function () {
                 done();
             });
         }).timeout(requestReadingTimeout);
-
     });
 
     describe('POST /api/v1/substitution with invalid base ID', () => {
@@ -296,7 +291,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'base ID is invalid'); // TODO Uncaught TypeError: obj.indexOf is not a function
+                    assert.include(body, {err: 'base ID is invalid'});
                     done();
                 });
             });
@@ -315,7 +310,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'overlay ID is invalid'); // TODO Uncaught TypeError: obj.indexOf is not a function
+                    assert.include(body, {err: 'overlay ID is invalid'});
                     done();
                 });
             });
@@ -351,7 +346,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'overlay filepath is invalid'); // TODO Uncaught TypeError: obj.indexOf is not a function
+                    assert.include(body, {err: 'overlay filepath is invalid'}); // TODO Uncaught TypeError: obj.indexOf is not a function
                     done();
                 });
             });
@@ -370,7 +365,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'substitution files do not exist'); // TODO 200 to equal 400
+                    assert.include(body, {err: 'substitution files do not exist'}); // TODO 200 to equal 400
                     done();
                 });
             });
@@ -391,7 +386,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'substitution overlay file does not exist'); // TODO Uncaught TypeError: obj.indexOf is not a function
+                    assert.include(body, {err: 'substitution overlay file does not exist'}); // TODO Uncaught TypeError: obj.indexOf is not a function
                     done();
                 });
             });
@@ -412,7 +407,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, 'substitution base file does not exist'); // TODO expected 200 to equal 400
+                    assert.include(body, {err: 'substitution base file does not exist'}); // TODO expected 200 to equal 400
                     done();
                 });
             });
