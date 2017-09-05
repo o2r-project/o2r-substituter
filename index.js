@@ -136,9 +136,7 @@ function initApp(callback) {
       // new random id
       let newID = randomstring.generate(config.id_length);
 
-      // TODO: user id
       // TODO: check if id exists
-      // TODO: run analysis
       let passon = {
         user: "0000-0003-2287-369X",  // TODO: req.user.id
         id: newID,
@@ -149,6 +147,7 @@ function initApp(callback) {
       };
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
       return controllers.substitute.getMetadata(passon)   // get metadata
+        .then(controllers.substitute.checkOverlayId)      // check ERC id of overlay ERC
         .then(controllers.substitute.createFolder)         // create folder with id
         .then(controllers.substitute.copyBaseFiles)       // copy base files into folder
         .then(controllers.substitute.copyOverlayFiles)    // copy overlay files into folder
