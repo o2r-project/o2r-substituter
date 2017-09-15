@@ -23,7 +23,6 @@ const exec = require('child_process').exec;
 const errorMessageHelper = require('../lib/error-message');
 
 var Stream = require('stream');
-const Docker = require('dockerode');
 const clone = require('clone');
 
 // check fs & create dirs if necessary
@@ -161,7 +160,7 @@ function copyBaseFiles(passon) {
                     let basefile = passon.basePath + '/' + substFiles[i].base;
                     try {
                         // check if base filename exists in substitutionFiles
-                        if (substFiles[i].base == undefined || typeof(substFiles[i].base) != 'string' || substFiles[i].base == '') {
+                        if (filenameNotExists(substFiles[i].base)) {
                             debug('[%s] Error copying overlay files to directory of new compendium.', passon.id);
                             cleanup(passon);
                             let err = new Error ();
@@ -170,7 +169,7 @@ function copyBaseFiles(passon) {
                             reject(err);
                         } else {
                             // check if overlay filename exists in substitutionFiles
-                            if (substFiles[i].overlay == undefined || typeof(substFiles[i].overlay) != 'string' || substFiles[i].overlay == '') {
+                            if (filenameNotExists(substFiles[i].overlay)) {
                                 debug('[%s] Error copying overlay files to directory of new compendium.', passon.id);
                                 cleanup(passon);
                                 let err = new Error ();
@@ -192,7 +191,7 @@ function copyBaseFiles(passon) {
                             } // end if - does overlay file exist?
                         } // end if - does base file exist?
                     } catch(err) {
-                        debug('Error copying base files to directory of new compendium - err:\n%s', err);
+                        debug('[%s] Error copying base files to directory of new compendium - err:\n%s', passon.id, err);
                         cleanup(passon);
                         err.status = 400;
                         err.msg = 'could not copy base files - base path does not exist';
@@ -228,9 +227,6 @@ function copyOverlayFiles(passon) {
                     debug('[%s] Finished copy overlay files.\n', passon.id);
                     fulfill(passon);
                 } else {
-                    if (substFiles[i].overlay.indexOf("/") == 0) {
-                        substFiles[i].overlay = substFiles[i].overlay.substring(1);
-                    }
                     let overlayFilePath = substFiles[i].overlay;
                     let prefix = '';
                     if (overlayFilePath.lastIndexOf("/") >= 0) {
@@ -239,15 +235,15 @@ function copyOverlayFiles(passon) {
                         overlayFilePath =  overlayFilePath.substring(splitter);
                     }
                     try {
-                        let overlayfile = passon.overlayPath + '/' + overlayFilePath;
-                        let substoverlayfile = passon.substitutedPath + '/' + substFiles[i].overlay;
+                        let overlayfile = path.join(passon.overlayPath, overlayFilePath);
+                        let substoverlayfile = path.join(passon.substitutedPath, substFiles[i].overlay);
                         if (fse.existsSync(substoverlayfile)) {
-                            let newoverlayfilename = prefix + 'overlay_' + overlayFilePath;
-                            let newoverlayfilepath = passon.substitutedPath + '/' + newoverlayfilename;
+                            let newoverlayfilename = path.join(prefix, config.substitutionFilePrepend + overlayFilePath);
+                            let newoverlayfilepath = path.join(passon.substitutedPath, newoverlayfilename);
                             fse.copySync(overlayfile, newoverlayfilepath);
                             substFiles[i].filename = newoverlayfilename;
                         } else {
-                            let newoverlayfilepath = passon.substitutedPath + '/' + prefix + overlayFilePath;
+                            let newoverlayfilepath = path.join(passon.substitutedPath, prefix, overlayFilePath);
                             fse.copySync(overlayfile, newoverlayfilepath);
                         }
                     } catch(err) {
@@ -303,58 +299,24 @@ function saveToDB(passon) {
 }
 
 /**
- * function to create docker image
- * @param {object} passon - compendium id and data of compendia
- */
- function createDockerImage(passon) {
-    return new Promise((fulfill, reject) => {
-      debug('[%s] Creating docker image ...', passon.id);
-      let imagetitle = 'subst' + passon.id;
-      imagetitle = "bagtainer:" + imagetitle.toLowerCase();
-
-      // setup Docker client with default options
-      var docker = new Docker();
-      // debug('[%s] Docker client set up: %s', passon.id, JSON.stringify(docker));
-      debug('[%s] Docker client set up.', passon.id);
-
-      docker.buildImage({
-        context: passon.substitutedPath,
-        src: ['Dockerfile', "main.Rmd", "BerlinMit.csv", "erc.yml"]
-      }, {t: imagetitle}, function (err, response) {
-          if (err) {
-              cleanup(passon);
-              debug(err)
-          }
-          debug('# \n # \n Creating docker  image finished. \n # \n #');
-          passon.docker = {};
-          passon.docker.imageTag = imagetitle;
-          fulfill(passon);
-      });
-
-  });
- }
-
-/**
  * function to start docker container
  * @param {object} passon - compendium id and data of compendia
  */
- function startDockerContainer(passon) {
+ function createVolumeBinds(passon) {
     return new Promise((fulfill, reject) => {
-
-        // setup Docker client with default options
-        var docker = new Docker();
-        // debug('Docker client set up: %s', JSON.stringify(docker));
-        debug('[%s] Starting docker container ...');
+      try {
+        debug('[%s] Starting creating volume binds ...', passon.id);
+        passon.docker.imageTag = config.docker.imagePrefix + passon.id;
         if (!passon.docker.imageTag) {
             debug('[%s] image tag was not passed.');
             cleanup(passon);
             reject(new Error('image tag was not passed on!'));
         }
 
-        debug('[%s] Starting docker container with image [%s] ...',passon.id, passon.docker.imageTag);
+        debug('[%s] Starting creating volume binds with image [%s] ...',passon.id, passon.docker.imageTag);
         let substFiles = passon.metadata.substitution.substitutionFiles;
         let o2rPath = passon.substitutedPath + '/';
-        // for running docker
+        // data folder for erc.yaml
         let containerBinds = new Array();
         let baseBind = config.fs.compendium + passon.id + '/data' + ":" + "/erc";
         containerBinds.push(baseBind);
@@ -363,51 +325,29 @@ function saveToDB(passon) {
         let cmdBaseBind = "-v " + baseBind;
         cmdBinds.push(cmdBaseBind);
         for (let i=0; i< substFiles.length; i++) {
-            let bind = o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
+            let bind = o2rPath + substFiles[i].overlay + ":" + "/erc/" + substFiles[i].base + ":ro";
+            if (!filenameNotExists(substFiles[i].filename) == true) {
+                bind = o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
+            }
             containerBinds.push(bind);
             let cmdBind = "-v " + bind;
             cmdBinds.push(cmdBind);
         }
-        passon.docker.binds = containerBinds;
         passon.yaml = {};
         passon.yaml.binds = cmdBinds;
-
-        if (!passon.docker.binds) {
+        if (!passon.yaml.binds) {
             debug('[%s] volume binds were not passed.');
             cleanup(passon);
             reject(new Error('volume binds were not passed!'));
         } else {
-            debug('Run docker image with binds: \n%s', JSON.stringify(passon.docker.binds));
-/*
-            let create_options = clone(config.bagtainer.docker.create_options);
-            let start_options = clone(config.bagtainer.docker.start_options);
-            debug('Starting Docker container now with options:\n\tcreate_options: %s\n\tstart_options: %s', JSON.stringify(create_options), JSON.stringify(start_options));
-
-            docker.run(passon.docker.imageTag, [], process.stdout, {
-              "HostConfig": {
-                "Binds": containerBinds
-              }
-            }).then(function(container) {
-                debug('Container StatusCode: %s', container.output.StatusCode);
-                if (container.output.StatusCode === 0) {
-                    debug('[%s] Creating container finished.', passon.id);
-                    passon.docker.containerID = container.id;
-                    debug('removing container %s ...', container.id);
-                    return container.remove();
-                }
-            }).then(function(data) {
-                // data === "" --> typeof(data) === String
-                debug('Container has been removed');
-                fulfill(passon);
-            }).catch(function(err) {
-                debug('[DOCKER] error: %s', err);
-                container.remove();
-                cleanup(passon);
-                reject(new Error(err));
-            });
-*/
+            debug('Finished creating volume binds with binds: \n%s', JSON.stringify(passon.yaml.binds));
             fulfill(passon);
         }
+      } catch (err) {
+          debug('[%s] Error during creating volume binds with err:\n%s', passon.id, err);
+          cleanup(passon);
+          reject(new Error('volume binds were not passed!'));
+      }
     });
  }
 
@@ -437,7 +377,7 @@ function saveToDB(passon) {
       debug('[%s] Starting write yaml ...', passon.id);
        try {
           let yamlPath = passon.substitutedPath + '/erc.yml';
-          let dockerCmd = "docker run -it --rm";
+          let dockerCmd = config.docker.cmd;
           let yamlBinds = passon.yaml.binds;
           for (let i=0; i<yamlBinds.length; i++) {
               dockerCmd = dockerCmd + " " + passon.yaml.binds[i];
@@ -463,16 +403,27 @@ function saveToDB(passon) {
    })
  };
 
+ /**
+  * function to check if filename exist
+  * @param {object} passon - compendium id and data of compendia
+  * @return {boolean} true, if filename does not exist, else false
+  */
+function filenameNotExists(filename) {
+    if (filename == undefined || typeof(filename) != 'string' || filename == '') {
+      return true;
+    } else {
+      return false;
+    }
+};
+
 module.exports = {
-    // checkNewId: checkNewId,
     getMetadata: getMetadata,
     checkOverlayId: checkOverlayId,
     createFolder: createFolder,
     copyBaseFiles: copyBaseFiles,
     copyOverlayFiles: copyOverlayFiles,
     saveToDB: saveToDB,
-    createDockerImage: createDockerImage,
-    startDockerContainer: startDockerContainer,
+    createVolumeBinds: createVolumeBinds,
     cleanup: cleanup,
     writeYaml: writeYaml
 };
