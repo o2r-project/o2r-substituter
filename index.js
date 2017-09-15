@@ -166,7 +166,7 @@ function initApp(callback) {
     });
 
     // GET list of subtsitution
-    app.get('/api/v1/substitution', controllers.substitutions);
+    app.get('/api/v1/substitution', controllers.substitutions.view);
     // GET list of related substitutions by filter "base" and/or "overlay"
 
 

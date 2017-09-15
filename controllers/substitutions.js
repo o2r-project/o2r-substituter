@@ -22,12 +22,20 @@ const exec = require('child_process').exec;
 var Compendium = require('../lib/model/compendium');
 
 exports.view = (req, res) => {
-  console.log("req.query");
-  console.log(req.query);
   var answer = {};
   var filter = { "metadata.substituted": true };
   var limit = parseInt(req.query.limit || config.list_limit, 10);
   var start = parseInt(req.query.start || 1, 10) - 1;
+  
+  if (req.query.base) {
+    filter = { "metadata.substituted": true, "metadata.substitution.base": req.query.base};
+  }
+  if (req.query.overlay) {
+    filter = { "metadata.substituted": true, "metadata.substitution.overlay": req.query.overlay};
+  }
+  if (req.query.base && req.query.overlay) {
+      filter = { "metadata.substituted": true, "metadata.substitution.base": req.query.base, "metadata.substitution.overlay": req.query.overlay};
+  }
 
   Compendium.find(filter).select('id').skip(start).limit(limit).exec((err, comps) => {
     if (err) {
