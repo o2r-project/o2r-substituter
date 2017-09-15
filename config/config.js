@@ -46,34 +46,16 @@ c.meta.doiPath = 'metadata.o2r.identifier.doi';
 
 // docker commands
 c.docker = {};
+c.docker.cmd = 'docker run -it --rm';
+c.docker.imageNamePrefix = 'bagtainer:';
 
-c.bagtainer = {};
-c.bagtainer.docker = {};
-// See https://docs.docker.com/engine/reference/commandline/create/ and https://docs.docker.com/engine/reference/api/docker_remote_api_v1.24/#create-a-container
-c.bagtainer.docker.create_options = {
-  //AttachStderr: true,
-  //AttachStdin: false,
-  //AttachStdout: true,
-  //Cmd: ['bash', '-c', 'cat /etc/resolv.conf'],
-  CpuShares: 256,
-  //Cpuset: '',
-  //Domainname: '',
-  //Entrypoint: null,
-  Env: ['O2RPLATFORM=true'],
-  //Hostname: 'b9ea983254ef',
-  Memory: 1073741824, // 1G
-  MemorySwap: 2147483648, // double of 1G
-  NetworkMode: 'none',
-  Rm: true
-};
-// https://docs.docker.com/engine/reference/api/docker_remote_api_v1.24/#start-a-container
-c.bagtainer.docker.start_options = {
-};
-
-c.id_length = 6; // length of compendium ids [0-9,a-z,A-Z]
+c.id_length = 5; // length of substituted ids [0-9,a-z,A-Z]
 
 // session secret
 c.sessionsecret = env.SESSION_SECRET || 'o2r';
+
+// filename prepend of substitution file
+c.substitutionFilePrepend = 'overlay_';
 
 // authentication levels
 c.user = {};
