@@ -21,16 +21,17 @@ const debug = require('debug')('substituter');
 const mongoose = require('mongoose');
 const backoff = require('backoff');
 
-// check fs & create dirs if necessary
 const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.base);
 fse.mkdirsSync(config.fs.compendium);
-// const fs = require('fs');
 const yaml = require('js-yaml');
-// const dirTree = require('directory-tree');
 
+mongoose.Promise = global.Promise;
 const dbURI = config.mongo.location + config.mongo.database;
-mongoose.connect(dbURI);
+mongoose.connect(dbURI, {
+    useMongoClient: true,
+    promiseLibrary: global.Promise
+});
 mongoose.connection.on('error', (err) => {
   debug('Could not connect to MongoDB @ %s: %s', dbURI, err);
 });
@@ -46,14 +47,6 @@ const randomstring = require('randomstring');
 var controllers = {};
 controllers.substitute = require('./controllers/substitute');
 controllers.substitutions = require('./controllers/substitutions');
-
-// code which is executed on every request
-app.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', '*');    // allow CORS
-    res.header("Access-Control-Allow-Headers", "Cache-Control, Pragma, Origin, Authorization, Content-Type, X-Requested-With");
-    res.header("Access-Control-Allow-Methods", "GET, PUT, POST");
-    next();
-});
 
 app.use((req, res, next) => {
   debug(req.method + ' ' + req.path);
@@ -94,7 +87,7 @@ function initApp(callback) {
     // configure express-session, stores reference to authdetails in cookie.
     // authdetails themselves are stored in MongoDBStore
     var mongoStore = new MongoDBStore({
-      uri: config.mongo.location + config.mongo.database,
+      uri: dbURI,
       collection: 'sessions'
     }, err => {
       if (err) {
@@ -124,21 +117,20 @@ function initApp(callback) {
 
     app.post('/api/v1/substitution', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
-      // if (!req.isAuthenticated()) {
-      //   res.status(401).send('{"error":"not authenticated"}');
-      //   return;
-      // }
-      // if (req.user.level < config.user.level.substitute) {
-      //   res.status(401).send('{"error":"not allowed"}');
-      //   return;
-      // }
+      if (!req.isAuthenticated()) {
+        res.status(401).send('{"error":"not authenticated"}');
+        return;
+      }
+      if (req.user.level < config.user.level.substitute) {
+        res.status(401).send('{"error":"not allowed"}');
+        return;
+      }
 
       // new random id
       let newID = randomstring.generate(config.id_length);
 
-      // TODO: check if id exists
       let passon = {
-        user: "0000-0003-2287-369X",  // TODO: req.user.id
+        user: req.user.id,
         id: newID,
         metadata: {
           substituted: true,
@@ -151,13 +143,11 @@ function initApp(callback) {
         .then(controllers.substitute.createFolder)         // create folder with id
         .then(controllers.substitute.copyBaseFiles)       // copy base files into folder
         .then(controllers.substitute.copyOverlayFiles)    // copy overlay files into folder
-        .then(controllers.substitute.createDockerImage)   // TODO: later not necessary
-        .then(controllers.substitute.startDockerContainer)  // run docker container with given image
+        .then(controllers.substitute.createVolumeBinds)  // create metadata for writing to yaml
         .then(controllers.substitute.writeYaml)             // write docker run cmd to erc.yml
         .then(controllers.substitute.saveToDB)             // save to DB
         .then((passon) => {
             debug('[%s] Finished substitution of new compendium.', passon.id);
-            // console.log(passon);
             res.status(200).send({'id': passon.id});
         })
         .catch(err => {
@@ -175,11 +165,10 @@ function initApp(callback) {
         });
     });
 
-    // GET list of subtsitutions
-    app.get('/api/v1/substitutions', controllers.substitutions.view);
-
+    // GET list of subtsitution
+    app.get('/api/v1/substitution', controllers.substitutions);
     // GET list of related substitutions by filter "base" and/or "overlay"
-    // app.get('/api/v1/substitutions/?base...&overlay=---');
+
 
     var server = app.listen(config.net.port, () => {
       debug('substituter %s with API version %s waiting for requests on port %s',
