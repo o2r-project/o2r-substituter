@@ -148,7 +148,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with valid JSON - check metadata for: substituted', (done) => {
+        it('should respond with substituted metadata', (done) => {
           request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
             assert.ifError(err);
             let response = JSON.parse(body);
@@ -159,7 +159,7 @@ describe('Simple substitution of data', function () {
           });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with valid JSON - check metadata for: base and overlay ID', (done) => {
+        it('should respond with metadata for base and overlay ID', (done) => {
           request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
             assert.ifError(err);
             let response = JSON.parse(body);
@@ -172,7 +172,7 @@ describe('Simple substitution of data', function () {
           });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with valid JSON - check metadata for: base and overlay filenames', (done) => {
+        it('should respond with metadata for base and overlay filenames', (done) => {
           request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
             assert.ifError(err);
             let response = JSON.parse(body);
@@ -186,7 +186,7 @@ describe('Simple substitution of data', function () {
           });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with valid JSON - check substituted ERC-folder for files', (done) => {
+        it('should respond with existence of substiuted ERC files', (done) => {
           request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
             assert.ifError(err);
             let response = JSON.parse(body);
@@ -244,7 +244,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with valid JSON - check metadata for: substituted', (done) => {
+        it('should respond with substituted metadata', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
@@ -255,7 +255,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with valid JSON - check metadata for: base and overlay ID', (done) => {
+        it('should respond with metadata for base and overlay ID', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
@@ -268,7 +268,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with valid JSON - check metadata for: substitutionFiles & filename', (done) => {
+        it('should respond with metadata for base, overlay and filename', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
@@ -283,7 +283,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with valid JSON - check substituted ERC folder for files', (done) => {
+        it('should respond with existence of substituted ERC files', (done) => {
           request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
             assert.ifError(err);
             let response = JSON.parse(body);
