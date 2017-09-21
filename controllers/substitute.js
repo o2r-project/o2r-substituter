@@ -306,14 +306,14 @@ function saveToDB(passon) {
     return new Promise((fulfill, reject) => {
       try {
         debug('[%s] Starting creating volume binds ...', passon.id);
-        passon.docker.imageTag = config.docker.imagePrefix + passon.id;
-        if (!passon.docker.imageTag) {
+        passon.imageTag = config.docker.imagePrefix + passon.id;
+        if (!passon.imageTag) {
             debug('[%s] image tag was not passed.');
             cleanup(passon);
             reject(new Error('image tag was not passed on!'));
         }
 
-        debug('[%s] Starting creating volume binds with image [%s] ...',passon.id, passon.docker.imageTag);
+        debug('[%s] Starting creating volume binds with image [%s] ...',passon.id, passon.imageTag);
         let substFiles = passon.metadata.substitution.substitutionFiles;
         let o2rPath = passon.substitutedPath + '/';
         // data folder for erc.yaml
@@ -387,7 +387,7 @@ function saveToDB(passon) {
           if (!doc.execution) {
               doc.execution = {};
           }
-          doc.execution.cmd = "'" + dockerCmd + " " + passon.docker.imageTag + "'";
+          doc.execution.cmd = "'" + dockerCmd + " " + passon.imageTag + "'";
           debug('[%s] New erc.yml file: \n %s', passon.id, yaml.dump(doc));
           writeyaml.sync(yamlPath, doc, function(err) {
               debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);

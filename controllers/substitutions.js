@@ -23,33 +23,31 @@ var Compendium = require('../lib/model/compendium');
 
 exports.view = (req, res) => {
   var answer = {};
-  var filter = { "metadata.substituted": true };
+  var filter = {};
+  filter[config.meta.substituted] = true;
   var limit = parseInt(req.query.limit || config.list_limit, 10);
   var start = parseInt(req.query.start || 1, 10) - 1;
-  
-  if (req.query.base) {
-    filter = { "metadata.substituted": true, "metadata.substitution.base": req.query.base};
+
+  if (req.query.base != null) {
+      filter[config.meta.base] = req.query.base;
   }
-  if (req.query.overlay) {
-    filter = { "metadata.substituted": true, "metadata.substitution.overlay": req.query.overlay};
-  }
-  if (req.query.base && req.query.overlay) {
-      filter = { "metadata.substituted": true, "metadata.substitution.base": req.query.base, "metadata.substitution.overlay": req.query.overlay};
+  if (req.query.overlay != null) {
+      filter[config.meta.overlay] = req.query.overlay;
   }
 
   Compendium.find(filter).select('id').skip(start).limit(limit).exec((err, comps) => {
     if (err) {
-      res.status(500).send(JSON.stringify({ error: 'query failed' }));
+      res.status(500).send({ error: 'query failed' });
     } else {
       var count = comps.length;
       if (count <= 0) {
-        res.status(404).send(JSON.stringify({ error: 'no compendium found' }));
+        res.status(404).send({ error: 'no compendium found' });
       } else {
 
         answer.results = comps.map(comp => {
           return comp.id;
         });
-        res.status(200).send(JSON.stringify(answer));
+        res.status(200).send(answer);
       }
     }
   });

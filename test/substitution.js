@@ -39,7 +39,7 @@ describe('List all substitutions', function () {
         let base_file_list = "BerlinMit.csv";
         let overlay_file_list = "BerlinOhne.csv";
 
-        this.timeout(0);
+        this.timeout(30000);
 
         // first upload
         request(req_base01, (err, res, body) => {
@@ -64,9 +64,9 @@ describe('List all substitutions', function () {
         this.timeout(30000);
     });
 
-    describe('GET /api/v1/substitutions response with list of ERC ids', () => {
+    describe('GET /api/v1/substitution response with list of ERC ids', () => {
       it('should respond with HTTP 200 OK', (done) => {
-          request(global.test_host + '/api/v1/substitutions', (err, res, body) => {
+          request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                   assert.ifError(err);
                   assert.equal(res.statusCode, 200);
                   done();
