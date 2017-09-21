@@ -10,7 +10,6 @@ cache:
     - "node_modules"
 before_install:
   - sh give-permission.sh
-  - cd home/travis/
   - mkdir /tmp/o2r
   - ls
   - docker --version
