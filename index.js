@@ -29,8 +29,8 @@ const yaml = require('js-yaml');
 mongoose.Promise = global.Promise;
 const dbURI = config.mongo.location + config.mongo.database;
 mongoose.connect(dbURI, {
-    useMongoClient: true,
-    promiseLibrary: global.Promise
+  useMongoClient: true,
+  promiseLibrary: global.Promise
 });
 mongoose.connection.on('error', (err) => {
   debug('Could not connect to MongoDB @ %s: %s', dbURI, err);
@@ -113,7 +113,7 @@ function initApp(callback) {
     /*
      * configure routes
      */
-     var Compendium = require('./lib/model/compendium');
+    var Compendium = require('./lib/model/compendium');
 
     app.post('/api/v1/substitution', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
@@ -147,21 +147,21 @@ function initApp(callback) {
         .then(controllers.substitute.writeYaml)             // write docker run cmd to erc.yml
         .then(controllers.substitute.saveToDB)             // save to DB
         .then((passon) => {
-            debug('[%s] Finished substitution of new compendium.', passon.id);
-            res.status(200).send({'id': passon.id});
+          debug('[%s] Finished substitution of new compendium.', passon.id);
+          res.status(200).send({ 'id': passon.id });
         })
         .catch(err => {
-            debug('[%s] - Error during substitution \n %s', passon.id, JSON.stringify(err));
+          debug('[%s] - Error during substitution \n %s', passon.id, JSON.stringify(err));
 
-            let status = 500;
-            if (err.status) {
-              status = err.status;
-            }
-            let msg = 'Internal error';
-            if (err.msg) {
-              msg = err.msg;
-            }
-            res.status(status).send(JSON.stringify({ err: msg }));
+          let status = 500;
+          if (err.status) {
+            status = err.status;
+          }
+          let msg = 'Internal error';
+          if (err.msg) {
+            msg = err.msg;
+          }
+          res.status(status).send(JSON.stringify({ err: msg }));
         });
     });
 
@@ -214,8 +214,9 @@ dbBackoff.on('ready', function (number, delay) {
             debug('Mongoose: Disconnected all connections.');
           });
           dbBackoff.backoff();
+        } else {
+          debug('Started application.');
         }
-        debug('Started application.');
       });
     }
   });
