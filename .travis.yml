@@ -9,6 +9,10 @@ cache:
   directories:
     - "node_modules"
 before_install:
+  - sh give-permission.sh
+  - cd home/travis/
+  - mkdir /tmp/o2r
+  - ls
   - docker --version
   - docker pull o2rproject/o2r-loader:latest
   - docker pull o2rproject/o2r-muncher:latest
@@ -20,7 +24,7 @@ before_script:
   - docker run --name mongodb -d -p 27017:27017 mongo:3.4
   - docker run --name testloader -d -p 8088:8088 --link mongodb:mongodb -v $HOME:/tmp/o2r -e LOADER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-loader:latest
   - docker run --name testmuncher -d -p 8080:8080 --link mongodb:mongodb -v $HOME:/tmp/o2r -e MUNCHER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-muncher:latest
-  - sleep 20
+  - sleep 10
   - docker exec testloader chown $UID:$UID /tmp/o2r
 script:
   - DEBUG=substituter,substituter:* SUBSTITUTER_BASEPATH=$HOME/ npm start &
