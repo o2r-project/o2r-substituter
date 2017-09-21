@@ -1,4 +1,4 @@
-# (C) Copyright 2016 The o2r project. https://o2r.info
+# (C) Copyright 2017 o2r project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,24 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM frolvlad/alpine-python3
-MAINTAINER o2r-project <https://o2r.info>
+FROM alpine:3.6
 
-RUN apk add --no-cache --update\
-    git \
-    wget \
-    unzip \
+# Add Alpine mirrors, replacing default repositories with edge ones, based on https://github.com/jfloff/alpine-python/blob/master/3.4/Dockerfile
+RUN echo \
+  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
+  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
+
+# Add app and dependencies
+RUN apk add --no-cache \
     nodejs \
-    openssl \
-    ca-certificates \
-  && pip install --upgrade pip \
-  && pip install bagit \
-  && git clone --depth 1 -b master https://github.com/o2r-project/o2r-substituter /substituter \
-  && wget -O /sbin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 \
-  && chmod +x /sbin/dumb-init
-
-RUN apk del \
+    nodejs-npm \
     git \
+    ca-certificates \
+    wget \
+    dumb-init \
+  && git clone --depth 1 -b master https://github.com/o2r-project/o2r-substituter /substituter \
+  && apk del git \
     wget \
     ca-certificates \
   && rm -rf /var/cache
@@ -45,15 +45,16 @@ ARG VCS_REF
 ARG BUILD_DATE
 
 # Metadata http://label-schema.org/rc1/
-LABEL org.label-schema.vendor="o2r project" \
-      org.label-schema.url="http://o2r.info" \
-      org.label-schema.name="o2r substituter" \
-      org.label-schema.description="ERC content substitution" \    
-      org.label-schema.version=$VERSION \
-      org.label-schema.vcs-url=$VCS_URL \
-      org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.docker.schema-version="rc1"
+LABEL maintainer="o2r-project <https://o2r.info>" \
+  org.label-schema.vendor="o2r project" \
+  org.label-schema.url="http://o2r.info" \
+  org.label-schema.name="o2r substituter" \
+  org.label-schema.description="ERC content substitution" \    
+  org.label-schema.version=$VERSION \
+  org.label-schema.vcs-url=$VCS_URL \
+  org.label-schema.vcs-ref=$VCS_REF \
+  org.label-schema.build-date=$BUILD_DATE \
+  org.label-schema.docker.schema-version="rc1"
 
-ENTRYPOINT ["/sbin/dumb-init", "--"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["npm", "start" ]
