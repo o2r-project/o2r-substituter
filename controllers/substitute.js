@@ -118,17 +118,17 @@ function createFolder(passon) {
         debug('[%s] Creating folder for new compendium ...', passon.id);
         try {
             fse.mkdirsSync(outputPath);
+            debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
+            passon.substitutedPath = outputPath;
+            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base) + '/data';
+            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay) + '/data';
+            passon.basePath = basePath;
+            passon.overlayPath = overlayPath;
+            fulfill(passon);
         } catch(err) {
             debug('[%s] Error creating directory for new compendium - err:\n%s', passon.id, err);
             reject('Error creating directory for new compendium id: \n' + err);
         }
-        debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
-        passon.substitutedPath = outputPath;
-        var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base) + '/data';
-        var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay) + '/data';
-        passon.basePath = basePath;
-        passon.overlayPath = overlayPath;
-        fulfill(passon);
     });
 }
 

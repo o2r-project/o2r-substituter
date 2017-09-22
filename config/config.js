@@ -37,7 +37,7 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 }
 
 // fs paths
-c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r-dev/'; // '/tmp/o2r/'
+c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/'; // '/tmp/o2r-dev/';
 c.fs.compendium = c.fs.base + 'compendium/';
 
 // metadata extraction and brokering options
