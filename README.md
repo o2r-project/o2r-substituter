@@ -22,7 +22,7 @@ The configuration can be done via environment variables.
 - `SUBSTITUTER_PORT`
   Define on which port substituter should listen. Defaults to `8089`.
 - `SUBSTITUTER_MONGODB` __Required__
-  Location for the mongo db. Defaults to `mongodb://localhost/`. You will very likely need to change this.
+  Location for the MongoDB. Defaults to `mongodb://localhost/`. You will very likely need to change this.
 - `SUBSTITUTER_MONGODB_DATABASE`
   Which database inside the mongo db should be used. Defaults to `muncher`.
 - `SUBSTITUTER_BASEPATH`
@@ -35,7 +35,7 @@ The configuration can be done via environment variables.
 ```bash
 npm install
 
-# manually start mongodb and o2r-loader
+# manually start mongodb, o2r-loader, and o2r-muncher
 npm start
 
 npm test
@@ -43,10 +43,10 @@ npm test
 
 ## Dockerfile
 
-The file `Dockerfile` describes the Docker image published at [Docker Hub](https://hub.docker.com/r/o2rproject/o2r-substituter/).
+The file `Dockerfile` is the basis for the Docker image published at [Docker Hub](https://hub.docker.com/r/o2rproject/o2r-substituter/).
 
 ## License
 
 o2r-substituter is licensed under Apache License, Version 2.0, see file LICENSE.
 
-Copyright (C) 2016 - o2r project.
+Copyright (C) 2017 - o2r project.

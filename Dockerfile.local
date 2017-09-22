@@ -1,4 +1,4 @@
-# (C) Copyright 2016 The o2r project. https://o2r.info
+# (C) Copyright 2017 o2r project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,37 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM frolvlad/alpine-python3
-MAINTAINER o2r-project <https://o2r.info>
+FROM alpine:3.6
 
-RUN apk add --no-cache --update\
-    git \
-    wget \
-    unzip \
+# Add Alpine mirrors, replacing default repositories with edge ones, based on https://github.com/jfloff/alpine-python/blob/master/3.4/Dockerfile
+RUN echo \
+  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
+  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+  && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
+
+# Add app and dependencies
+WORKDIR /substituter
+RUN apk add --no-cache \
     nodejs \
-    openssl \
-    ca-certificates \
-  && pip install --upgrade pip \
-  && pip install bagit \
-  && wget -O /sbin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 \
-  && chmod +x /sbin/dumb-init 
-
-RUN apk del \
+    nodejs-npm \
     git \
-    wget \
     ca-certificates \
-  && rm -rf /var/cache
+    wget \
+    dumb-init \
+  && git clone --depth 1 -b master https://github.com/o2r-project/o2r-substituter /bouncer
 
 WORKDIR /substituter
 COPY config config
+COPY controllers controllers
 COPY lib lib
 COPY index.js index.js
 COPY package.json package.json
 
 RUN npm install --production
-ENTRYPOINT ["/sbin/dumb-init", "--"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["npm", "start" ]
 
 # docker build --tag substituter -f Dockerfile.local --no-cache .
 # docker build --tag substituter -f Dockerfile.local .
-# DEBUG=substituter docker run -it -e 8089:8089 substituter
+# docker run -it -e DEBUG=substituter -p 8089:8089 substituter

@@ -30,7 +30,7 @@ const createSubstitutionPostRequest = require('./util').createSubstitutionPostRe
 
 describe('List all substitutions', function () {
 
-    before( function(done) {
+    before(function (done) {
         let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
         let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
         var base_id_list;
@@ -48,40 +48,38 @@ describe('List all substitutions', function () {
 
             // second upload
             request(req_overlay01, (err, res, body) => {
-              assert.ifError(err);
-              overlay_id_list = JSON.parse(body).id;
-
-              // substitution
-              let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
-              request(req_substitution, (err, res, body) => {
                 assert.ifError(err);
-                substituted_id_list = body.id;
+                overlay_id_list = JSON.parse(body).id;
 
-                done();
-              });
+                // substitution
+                let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
+                request(req_substitution, (err, res, body) => {
+                    assert.ifError(err);
+                    substituted_id_list = body.id;
+
+                    done();
+                });
             });
         });
         this.timeout(30000);
     });
 
     describe('GET /api/v1/substitution response with list of ERC ids', () => {
-      it('should respond with HTTP 200 OK', (done) => {
-          request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                  assert.ifError(err);
-                  assert.equal(res.statusCode, 200);
-                  done();
-          });
-      });
+        it.only('should respond with HTTP 200 OK', (done) => {
+            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+                assert.ifError(err);
+                assert.equal(res.statusCode, 200);
+                done();
+            });
+        });
     });
 });
 
 describe('Simple substitution of data', function () {
-  // this.timeout(40000);
-
     var base_id;
     var overlay_id;
 
-    before( function(done) {
+    before(function (done) {
         let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
         let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
         this.timeout(40000);
@@ -93,10 +91,10 @@ describe('Simple substitution of data', function () {
 
             // second upload
             request(req_overlay01, (err, res, body) => {
-              assert.ifError(err);
-              overlay_id = JSON.parse(body).id;
+                assert.ifError(err);
+                overlay_id = JSON.parse(body).id;
 
-              done();
+                done();
             });
         });
         this.timeout(30000);
@@ -149,53 +147,53 @@ describe('Simple substitution of data', function () {
         }).timeout(requestLoadingTimeout);
 
         it('should respond with substituted metadata', (done) => {
-          request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-            assert.ifError(err);
-            let response = JSON.parse(body);
-            assert.property(response, 'metadata');
-            assert.property(response.metadata, 'substituted');
-            assert.propertyVal(response.metadata, 'substituted', true);
-            done();
-          });
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                assert.property(response, 'metadata');
+                assert.property(response.metadata, 'substituted');
+                assert.propertyVal(response.metadata, 'substituted', true);
+                done();
+            });
         }).timeout(requestReadingTimeout);
 
         it('should respond with metadata for base and overlay ID', (done) => {
-          request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-            assert.ifError(err);
-            let response = JSON.parse(body);
-            assert.property(response.metadata, 'substitution');
-            assert.property(response.metadata.substitution, 'base');
-            assert.property(response.metadata.substitution, 'overlay');
-            assert.propertyVal(response.metadata.substitution, 'base', base_id);
-            assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
-            done();
-          });
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                assert.property(response.metadata, 'substitution');
+                assert.property(response.metadata.substitution, 'base');
+                assert.property(response.metadata.substitution, 'overlay');
+                assert.propertyVal(response.metadata.substitution, 'base', base_id);
+                assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
+                done();
+            });
         }).timeout(requestReadingTimeout);
 
         it('should respond with metadata for base and overlay filenames', (done) => {
-          request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-            assert.ifError(err);
-            let response = JSON.parse(body);
-            assert.property(response.metadata.substitution, 'substitutionFiles');
-            assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
-            assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
-            assert.notProperty(response.metadata.substitution.substitutionFiles[0], 'filename');
-            assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', base_file);
-            assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', overlay_file);
-            done();
-          });
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                assert.property(response.metadata.substitution, 'substitutionFiles');
+                assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
+                assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
+                assert.notProperty(response.metadata.substitution.substitutionFiles[0], 'filename');
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', base_file);
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', overlay_file);
+                done();
+            });
         }).timeout(requestReadingTimeout);
 
         it('should respond with existence of substiuted ERC files', (done) => {
-          request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-            assert.ifError(err);
-            let response = JSON.parse(body);
-            let basefile = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].base;
-            let overlayfile = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].overlay;
-            assert.equal(fse.existsSync(basefile), true, 'base file should exist in folder of substiuted ERC');
-            assert.equal(fse.existsSync(overlayfile), true, 'overlay file should exist in folder of substiuted ERC');
-            done();
-          });
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                let basefile = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].base;
+                let overlayfile = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].overlay;
+                assert.equal(fse.existsSync(basefile), true, 'base file should exist in folder of substiuted ERC');
+                assert.equal(fse.existsSync(overlayfile), true, 'overlay file should exist in folder of substiuted ERC');
+                done();
+            });
         }).timeout(requestReadingTimeout);
     });
 
@@ -284,15 +282,15 @@ describe('Simple substitution of data', function () {
         }).timeout(requestReadingTimeout);
 
         it('should respond with existence of substituted ERC files', (done) => {
-          request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-            assert.ifError(err);
-            let response = JSON.parse(body);
-            let basefile = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].base;
-            let filename = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].filename;
-            assert.equal(fse.existsSync(basefile), true, 'base file should exist in folder of substiuted ERC');
-            assert.equal(fse.existsSync(filename), true, 'filename file ("overlay_" + overlay file) should exist in folder of substiuted ERC');
-            done();
-          });
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                let basefile = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].base;
+                let filename = config.fs.compendium + substituted_id + '/data/' + response.metadata.substitution.substitutionFiles[0].filename;
+                assert.equal(fse.existsSync(basefile), true, 'base file should exist in folder of substiuted ERC');
+                assert.equal(fse.existsSync(filename), true, 'filename file ("overlay_" + overlay file) should exist in folder of substiuted ERC');
+                done();
+            });
         }).timeout(requestReadingTimeout);
     });
 
@@ -308,7 +306,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'base ID is invalid'});
+                    assert.include(body, { err: 'base ID is invalid' });
                     done();
                 });
             });
@@ -327,7 +325,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'overlay ID is invalid'});
+                    assert.include(body, { err: 'overlay ID is invalid' });
                     done();
                 });
             });
@@ -345,7 +343,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'base file does not exist'});
+                    assert.include(body, { err: 'base file does not exist' });
                     done();
                 });
             });
@@ -363,7 +361,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'overlay file does not exist'});
+                    assert.include(body, { err: 'overlay file does not exist' });
                     done();
                 });
             });
@@ -382,7 +380,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'substitution files do not exist'});
+                    assert.include(body, { err: 'substitution files do not exist' });
                     done();
                 });
             });
@@ -403,7 +401,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'substitution overlay file does not exist'});
+                    assert.include(body, { err: 'substitution overlay file does not exist' });
                     done();
                 });
             });
@@ -424,7 +422,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, {err: 'substitution base file does not exist'});
+                    assert.include(body, { err: 'substitution base file does not exist' });
                     done();
                 });
             });
