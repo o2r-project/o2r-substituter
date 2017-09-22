@@ -11,13 +11,13 @@ cache:
 before_install:
   - cd ..
   - ls
-  - chown -R $UID:$UID /o2r-substituter
+  - chown -R $UID:$UID o2r-substituter
   - ls
   - cd build
   - mkdir home
   - ls
   - mkdir home/travis
-  - chown -R $UID:$UID /home/travis
+  - chown -R $UID:$UID home/travis
   - mkdir home/travis/compendium
   - docker --version
   - docker pull o2rproject/o2r-loader:latest
