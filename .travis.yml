@@ -13,7 +13,7 @@ before_install:
   - ls
   - chown -R $UID:$UID o2r-substituter
   - ls
-  - cd build
+  - cd o2r-substituter
   - mkdir home
   - ls
   - mkdir home/travis
