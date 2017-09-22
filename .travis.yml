@@ -11,7 +11,7 @@ cache:
 before_install:
   - cd ..
   - ls
-  - chown -R $UID:$UID /build
+  - chown -R $UID:$UID /o2r-substituter
   - ls
   - cd build
   - mkdir home
