@@ -65,7 +65,7 @@ describe('List all substitutions', function () {
     });
 
     describe('GET /api/v1/substitution response with list of ERC ids', () => {
-        it.only('should respond with HTTP 200 OK', (done) => {
+        it('should respond with HTTP 200 OK', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 assert.ifError(err);
                 assert.equal(res.statusCode, 200);
