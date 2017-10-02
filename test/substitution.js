@@ -20,6 +20,8 @@ const assert = require('chai').assert;
 const request = require('request');
 const fse = require('fs-extra');
 const config = require('../config/config');
+const path = require('path');
+const yaml = require('js-yaml');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
@@ -27,6 +29,7 @@ const requestLoadingTimeout = 30000;
 const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
+const getYamlCmd = require('./util').getYamlCmd;
 
 describe('List all substitutions', function () {
 
@@ -72,6 +75,16 @@ describe('List all substitutions', function () {
                 done();
             });
         });
+        it('should respond with valid JSON document without error and one substitution', (done) => {
+            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                assert.isObject(response);
+                assert.notProperty(response, 'error');
+                assert.property(response, 'results')
+                done();
+            });
+        });
     });
 });
 
@@ -103,6 +116,7 @@ describe('Simple substitution of data', function () {
     // use two compendia (uploaded before) to run substitution
     describe('POST /api/v1/substitution with two valid ERCs', () => {
         var substituted_id;
+        var substituted_id_moreOverlays;
         let base_file = "BerlinMit.csv";
         let overlay_file = "BerlinOhne.csv";
 
@@ -194,14 +208,35 @@ describe('Simple substitution of data', function () {
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    let response = JSON.parse(body);
-                    assert.property(response.metadata.substitution, 'substitutionFiles');
-                    assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
-                    
-                    // TODO check erc.yml of created substitution
+                    assert.property(body, 'id');
+                    assert.isString(body.id);
+                    substituted_id_moreOverlays = body.id;
 
-                    done();
+                    request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
+                        assert.ifError(err);
+                        let response = JSON.parse(body);
+                        assert.property(response.metadata.substitution, 'substitutionFiles');
+                        assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
+
+                        done();
+                    });
                 });
+            });
+        }).timeout(requestLoadingTimeout);
+
+        it('should respond with correct written erc.yml with multiple overlays', (done) => {
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                assert.property(response.metadata.substitution, 'substitutionFiles');
+                assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
+                let ercCmd = getYamlCmd(response);
+                let yamlPath = path.join(config.fs.compendium, substituted_id_moreOverlays, "data", "erc.yml");
+                let dockerCmd = config.docker.cmd;
+                let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
+
+                assert.equal(doc.execution.cmd, ercCmd);
+                done();
             });
         }).timeout(requestLoadingTimeout);
 
@@ -440,7 +475,7 @@ describe('Simple substitution of data', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { err: 'substitution files do not exist' });
+                    assert.include(body, { err: 'substitution files missing' });
                     done();
                 });
             });

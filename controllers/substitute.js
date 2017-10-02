@@ -114,14 +114,14 @@ var Compendium = require('../lib/model/compendium');
  */
 function createFolder(passon) {
     return new Promise((fulfill, reject) => {
-        var outputPath = path.join(config.fs.compendium, passon.id) + '/data';
+        var outputPath = path.join(config.fs.compendium, passon.id, '/data');
         debug('[%s] Creating folder for new compendium ...', passon.id);
         try {
             fse.mkdirsSync(outputPath);
             debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
             passon.substitutedPath = outputPath;
-            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base) + '/data';
-            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay) + '/data';
+            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base, '/data');
+            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay, '/data');
             passon.basePath = basePath;
             passon.overlayPath = overlayPath;
             fulfill(passon);
@@ -141,7 +141,7 @@ function copyBaseFiles(passon) {
     return new Promise((fulfill, reject) => {
         let substFiles = passon.metadata.substitution.substitutionFiles;
         // check if aray substifutionFiles is not null
-        if (Number.isInteger(substFiles.length) && substFiles.length > 0) {
+        if (substFiles != undefined && Number.isInteger(substFiles.length) && substFiles.length > 0) {
             for (var i=0; i<=substFiles.length; i++) {
                 if (i==substFiles.length) {
                     try {
@@ -204,7 +204,7 @@ function copyBaseFiles(passon) {
             cleanup(passon);
             let err = new Error ();
             err.status = 400;
-            err.msg = 'substitution files do not exist';
+            err.msg = 'substitution files missing';
             reject(err);
         } // end if - does substitutionFiles array exist
     });
@@ -306,7 +306,7 @@ function saveToDB(passon) {
     return new Promise((fulfill, reject) => {
       try {
         debug('[%s] Starting creating volume binds ...', passon.id);
-        passon.imageTag = config.docker.imagePrefix + passon.id;
+        passon.imageTag = config.docker.imageNamePrefix + passon.id;
         if (!passon.imageTag) {
             debug('[%s] image tag was not passed.');
             cleanup(passon);
@@ -315,21 +315,20 @@ function saveToDB(passon) {
 
         debug('[%s] Starting creating volume binds with image [%s] ...',passon.id, passon.imageTag);
         let substFiles = passon.metadata.substitution.substitutionFiles;
-        let o2rPath = passon.substitutedPath + '/';
         // data folder for erc.yaml
-        let containerBinds = new Array();
-        let baseBind = config.fs.compendium + passon.id + '/data' + ":" + "/erc";
-        containerBinds.push(baseBind);
+// let containerBinds = new Array();
+        let baseBind = path.join(config.fs.compendium, passon.id, '/data') + ":" + "/erc";
+// containerBinds.push(baseBind);
         // for erc.yml
         let cmdBinds = new Array();
         let cmdBaseBind = "-v " + baseBind;
         cmdBinds.push(cmdBaseBind);
         for (let i=0; i< substFiles.length; i++) {
-            let bind = o2rPath + substFiles[i].overlay + ":" + "/erc/" + substFiles[i].base + ":ro";
+            let bind = path.join(passon.substitutedPath, substFiles[i].overlay) + ":" + path.join("/erc/", substFiles[i].base) + ":ro";
             if (!filenameNotExists(substFiles[i].filename) == true) {
-                bind = o2rPath + substFiles[i].filename + ":" + "/erc/" + substFiles[i].base + ":ro";
+                bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc/", substFiles[i].base) + ":ro";
             }
-            containerBinds.push(bind);
+// containerBinds.push(bind);
             let cmdBind = "-v " + bind;
             cmdBinds.push(cmdBind);
         }
@@ -376,7 +375,7 @@ function saveToDB(passon) {
    return new Promise((fulfill, reject) => {
       debug('[%s] Starting write yaml ...', passon.id);
        try {
-          let yamlPath = passon.substitutedPath + '/erc.yml';
+          let yamlPath = path.join(passon.substitutedPath, '/erc.yml');
           let dockerCmd = config.docker.cmd;
           let yamlBinds = passon.yaml.binds;
           for (let i=0; i<yamlBinds.length; i++) {
@@ -405,7 +404,7 @@ function saveToDB(passon) {
 
  /**
   * function to check if filename exist
-  * @param {object} passon - compendium id and data of compendia
+  * @param {object} filename - filename
   * @return {boolean} true, if filename does not exist, else false
   */
 function filenameNotExists(filename) {

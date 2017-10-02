@@ -41,8 +41,10 @@ exports.view = (req, res) => {
     } else {
       var count = comps.length;
       if (count <= 0) {
+        debug('No compendium found.');
         res.status(404).send({ error: 'no compendium found' });
       } else {
+        debug('Found %s results', count);
 
         answer.results = comps.map(comp => {
           return comp.id;

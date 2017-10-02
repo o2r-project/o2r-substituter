@@ -19,6 +19,8 @@ const request = require('request');
 const tmp = require('tmp');
 const AdmZip = require('adm-zip');
 const fs = require('fs');
+const config = require('../config/config')
+const path = require('path');
 
 function uploadCompendium(path, cookie) {
   var zip = new AdmZip();
@@ -80,6 +82,41 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
   return (reqParams);
 };
 
+function getYamlCmd(metadata) {
+    let substFiles = metadata.metadata.substitution.substitutionFiles;
+    let baseBind = path.join(config.fs.compendium, metadata.id, '/data') + ":" + "/erc";
+    let substitutedPath = path.join(config.fs.compendium, metadata.id, '/data');
+    let cmdBinds = new Array();
+    let cmdBaseBind = "-v " + baseBind;
+    cmdBinds.push(cmdBaseBind);
+
+    let ercCmd = config.docker.cmd + " " + cmdBaseBind;
+    for (let i=0; i< substFiles.length; i++) {
+        let bind = path.join(substitutedPath, substFiles[i].overlay) + ":" + path.join("/erc/", substFiles[i].base) + ":ro";
+        if (!filenameNotExists(substFiles[i].filename) == true) {
+            bind = path.join(substitutedPath, substFiles[i].filename) + ":" + path.join("/erc/", substFiles[i].base) + ":ro";
+        }
+        let cmdBind = "-v " + bind;
+        cmdBinds.push(cmdBind);
+        ercCmd = ercCmd + " " + cmdBind;
+    }
+    return "'" + ercCmd + " " + config.docker.imageNamePrefix + metadata.id + "'";
+};
+
+/**
+ * function to check if filename exist
+ * @param {object} filename - filename
+ * @return {boolean} true, if filename does not exist, else false
+ */
+function filenameNotExists(filename) {
+   if (filename == undefined || typeof(filename) != 'string' || filename == '') {
+     return true;
+   } else {
+     return false;
+   }
+};
+
 
 module.exports.uploadCompendium = uploadCompendium;
 module.exports.createSubstitutionPostRequest = createSubstitutionPostRequest;
+module.exports.getYamlCmd = getYamlCmd;
