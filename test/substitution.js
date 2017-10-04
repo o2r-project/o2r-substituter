@@ -47,7 +47,9 @@ describe('List all substitutions', function () {
         request(global.test_host + '/api/v1/substitution', (err, res, body) => {
             assert.ifError(err);
             let response = JSON.parse(body);
-            amount_substitutions = response.results.length;
+            if (Array.isArray(response.results)) {
+                amount_substitutions = response.results.length;
+            } else { amount_substitutions = 0; }
 
             // first upload
             request(req_base01, (err, res, body) => {
@@ -240,7 +242,7 @@ describe('Simple substitution of data', function () {
                 assert.property(response.metadata.substitution, 'substitutionFiles');
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
 
-                let ERC_path = path.join("/tmp", "/o2r-dev", "/compendium", response.id, "/data");
+                let ERC_path = path.join("/tmp", config.fs.base, "/compendium", response.id, "/data");
                 let bind = " -v " + ERC_path + ":/erc"
                 let bind01 = " -v " + path.join(ERC_path, "BerlinOhne.csv") + ":" + path.join("/erc", "BerlinMit.csv") + ":ro"
                 let bind02 = " -v " + path.join(ERC_path, "overlay_erc.yml") + ":" + path.join("/erc", "Dockerfile") + ":ro"
