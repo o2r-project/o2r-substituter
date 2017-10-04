@@ -29,38 +29,43 @@ const requestLoadingTimeout = 30000;
 const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
-const getYamlCmd = require('./util').getYamlCmd;
 
 describe('List all substitutions', function () {
+    var substituted_id_list;
+    var amount_substitutions;
 
     before(function (done) {
         let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
         let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
         var base_id_list;
         var overlay_id_list;
-        var substituted_id_list;
         let base_file_list = "BerlinMit.csv";
         let overlay_file_list = "BerlinOhne.csv";
 
         this.timeout(30000);
 
-        // first upload
-        request(req_base01, (err, res, body) => {
+        request(global.test_host + '/api/v1/substitution', (err, res, body) => {
             assert.ifError(err);
-            base_id_list = JSON.parse(body).id;
+            let response = JSON.parse(body);
+            amount_substitutions = response.results.length;
 
-            // second upload
-            request(req_overlay01, (err, res, body) => {
+            // first upload
+            request(req_base01, (err, res, body) => {
                 assert.ifError(err);
-                overlay_id_list = JSON.parse(body).id;
+                base_id_list = JSON.parse(body).id;
 
-                // substitution
-                let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
-                request(req_substitution, (err, res, body) => {
+                // second upload
+                request(req_overlay01, (err, res, body) => {
                     assert.ifError(err);
-                    substituted_id_list = body.id;
+                    overlay_id_list = JSON.parse(body).id;
 
-                    done();
+                    // substitution
+                    let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
+                    request(req_substitution, (err, res, body) => {
+                        assert.ifError(err);
+                        substituted_id_list = body.id;
+                        done();
+                    });
                 });
             });
         });
@@ -81,7 +86,11 @@ describe('List all substitutions', function () {
                 let response = JSON.parse(body);
                 assert.isObject(response);
                 assert.notProperty(response, 'error');
-                assert.property(response, 'results')
+                assert.property(response, 'results');
+
+                assert.isArray(response.results);
+                assert.equal(response.results.length, (amount_substitutions + 1));
+                assert.include(response.results, substituted_id_list);
                 done();
             });
         });
@@ -230,11 +239,17 @@ describe('Simple substitution of data', function () {
                 let response = JSON.parse(body);
                 assert.property(response.metadata.substitution, 'substitutionFiles');
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
-                let ercCmd = getYamlCmd(response);
+
+                let ERC_path = path.join("/tmp", "/o2r-dev", "/compendium", response.id, "/data");
+                let bind = " -v " + ERC_path + ":/erc"
+                let bind01 = " -v " + path.join(ERC_path, "BerlinOhne.csv") + ":" + path.join("/erc", "BerlinMit.csv") + ":ro"
+                let bind02 = " -v " + path.join(ERC_path, "overlay_erc.yml") + ":" + path.join("/erc", "Dockerfile") + ":ro"
+                let bind03 = " -v " + path.join(ERC_path, "overlay_Dockerfile") + ":" + path.join("/erc", "main.Rmd") + ":ro"
+                let ercCmd = "'" + config.docker.cmd + bind + bind01 + bind02 + bind03 + " " + config.docker.imageNamePrefix + response.id + "'";
+
                 let yamlPath = path.join(config.fs.compendium, substituted_id_moreOverlays, "data", "erc.yml");
                 let dockerCmd = config.docker.cmd;
                 let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-
                 assert.equal(doc.execution.cmd, ercCmd);
                 done();
             });
