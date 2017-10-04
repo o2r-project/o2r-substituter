@@ -35,6 +35,19 @@ describe('List all substitutions', function () {
     var amount_substitutions;
 
     before(function (done) {
+        this.timeout(30000);
+
+        request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+            assert.ifError(err);
+            let response = JSON.parse(body);
+            if (Array.isArray(response.results)) {
+                amount_substitutions = response.results.length;
+            } else { amount_substitutions = 0; }
+            done();
+        });
+    })
+
+    beforeEach(function (done) {
         let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
         let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
         var base_id_list;
