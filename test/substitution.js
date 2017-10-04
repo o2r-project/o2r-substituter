@@ -48,8 +48,8 @@ describe('List all substitutions', function () {
     })
 
     beforeEach(function (done) {
-        let req_base01 = uploadCompendium('./test/erc/base01', cookie_o2r);
-        let req_overlay01 = uploadCompendium('./test/erc/overlay01', cookie_o2r);
+        let req_base01 = uploadCompendium('./test/erc/base02', cookie_o2r); // or './test/erc/base01'
+        let req_overlay01 = uploadCompendium('./test/erc/overlay02', cookie_o2r); // or './test/erc/overlay01'
         var base_id_list;
         var overlay_id_list;
         let base_file_list = "BerlinMit.csv";
@@ -255,7 +255,7 @@ describe('Simple substitution of data', function () {
                 assert.property(response.metadata.substitution, 'substitutionFiles');
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
 
-                let ERC_path = path.join("/tmp", config.fs.base, "/compendium", response.id, "/data");
+                let ERC_path = path.join(config.fs.compendium, response.id, "/data");
                 let bind = " -v " + ERC_path + ":/erc"
                 let bind01 = " -v " + path.join(ERC_path, "BerlinOhne.csv") + ":" + path.join("/erc", "BerlinMit.csv") + ":ro"
                 let bind02 = " -v " + path.join(ERC_path, "overlay_erc.yml") + ":" + path.join("/erc", "Dockerfile") + ":ro"
@@ -281,6 +281,25 @@ describe('Simple substitution of data', function () {
                 done();
             });
         }).timeout(requestReadingTimeout);
+
+        // TODO: this is for testing inline code, if substitution was successfull with the right file
+        it.skip('should respond with correct integer of mounted overlay dataset', (done) => {
+            // should not be: base02 -> "mitBerlin": Gesamtbilanz = 55.1, Jahr = 2014
+            // should be:  overlay02 -> "ohneBerlin": Gesamtbilanz = 1051.2, Jahr = 1990
+
+            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+                assert.ifError(err);
+                let response = JSON.parse(body);
+                let rmdfile = config.fs.compendium + substituted_id + '/data/main.Rmd';
+                // let mainhtml = config.fs.compendium + substituted_id + '/data/main.html';
+                let mainhtml = config.fs.compendium + substituted_id + '/data/main.Rmd';
+
+                let doc = fse.readFileSync(mainhtml, 'utf8');
+                let string_ = '"' + 'This is the maximum of ' + "'" + 'Gesamtbilanz' + "'" + ': 1051.2' + '"';
+                assert.include(doc, string_);
+                done();
+            });
+        }) //.timeout(requestReadingTimeout); //TODO: till ".skip" Error: cannot read property of undefined
     });
 
     describe('POST /api/v1/substitution with an overlay filename that already exists as an base filename', () => {
