@@ -30,7 +30,7 @@ const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 
-describe('List all substitutions', function () {
+describe('List all substitutions including one substituion', function () {
     var substituted_id_list;
     var amount_substitutions;
 

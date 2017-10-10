@@ -30,7 +30,7 @@ function uploadCompendium(path, cookie) {
   zip.writeZip(tmpfile);
 
   let formData = {
-    'content_type': 'compendium_v1',
+    'content_type': 'compendium',
     'compendium': {
       value: fs.createReadStream(tmpfile),
       options: {
