@@ -271,17 +271,12 @@ describe('Simple substitution of data', function () {
                 assert.property(response.metadata.substitution, 'substitutionFiles');
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
 
-                let ERC_path = path.join(config.fs.compendium, response.id, "/data");
-                let bind = " -v " + ERC_path + ":/erc"
-                let bind01 = " -v " + path.join(ERC_path, "BerlinOhne.csv") + ":" + path.join("/erc", "BerlinMit.csv") + ":ro"
-                let bind02 = " -v " + path.join(ERC_path, "overlay_erc.yml") + ":" + path.join("/erc", "Dockerfile") + ":ro"
-                let bind03 = " -v " + path.join(ERC_path, "overlay_Dockerfile") + ":" + path.join("/erc", "main.Rmd") + ":ro"
-                let ercCmd = "'" + config.docker.cmd + bind + bind01 + bind02 + bind03 + " " + config.docker.imageNamePrefix + response.id + "'";
-
                 let yamlPath = path.join(config.fs.compendium, substituted_id_moreOverlays, "data", "erc.yml");
                 let dockerCmd = config.docker.cmd;
                 let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.equal(doc.execution.cmd, ercCmd);
+                assert.include(doc.execution.cmd, "BerlinOhne.csv:" + path.join("/erc", "BerlinMit.csv") + ":ro");
+                assert.include(doc.execution.cmd, "overlay_erc.yml:" + path.join("/erc", "Dockerfile") + ":ro");
+                assert.include(doc.execution.cmd, "overlay_Dockerfile:" + path.join("/erc", "main.Rmd") + ":ro");
                 done();
             });
         }).timeout(requestLoadingTimeout);
