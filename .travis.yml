@@ -19,18 +19,12 @@ install:
 before_script:
   - docker run --name mongodb -d -p 27017:27017 mongo:3.4
   - docker run --name testloader -d -p 8088:8088 --link mongodb:mongodb -v $HOME:/tmp/o2r -e LOADER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-loader:latest
-  - docker run --name testmuncher -d -p 8080:8080 --link mongodb:mongodb -v $HOME:/tmp/o2r -e MUNCHER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-muncher:latest
+  - docker run --name testmuncher -d -p 8080:8080 --link mongodb:mongodb -v $HOME:/tmp/o2r -v /var/run/docker.sock:/var/run/docker.sock -e MUNCHER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-muncher:latest
   - docker build --tag substituter -f Dockerfile.local .
   - docker run --name testsubstituter -d -p 8089:8089 --link mongodb:mongodb -v $HOME:/tmp/o2r -e SUBSTITUTER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* substituter:latest
   - sleep 10
 script:
   - SUBSTITUTER_BASEPATH=$HOME/ npm test
-after_script:
-  - sleep 5
-  - docker logs mongodb
-  - docker logs testloader
-  - docker logs testmuncher
-  - docker logs testsubstituter
 after_failure:
   - sleep 5
   - docker logs mongodb

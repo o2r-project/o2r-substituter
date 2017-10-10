@@ -130,7 +130,7 @@ function initApp(callback) {
       let newID = randomstring.generate(config.id_length);
 
       let passon = {
-        user: req.user.id,
+        user: req.user.orcid,
         id: newID,
         metadata: {
           substituted: true,

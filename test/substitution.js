@@ -29,8 +29,9 @@ const requestLoadingTimeout = 30000;
 const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
+const publishCandidate = require('./util').publishCandidate;
 
-describe('List all substitutions including one substituion', function () {
+describe('List all substitutions including one substitution', function () {
     var substituted_id_list;
     var amount_substitutions;
 
@@ -69,17 +70,23 @@ describe('List all substitutions including one substituion', function () {
                 assert.ifError(err);
                 base_id_list = JSON.parse(body).id;
 
-                // second upload
-                request(req_overlay01, (err, res, body) => {
-                    assert.ifError(err);
-                    overlay_id_list = JSON.parse(body).id;
+                publishCandidate(base_id_list, cookie_o2r, () => {
 
-                    // substitution
-                    let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r, cookie_o2r);
-                    request(req_substitution, (err, res, body) => {
+                    // second upload
+                    request(req_overlay01, (err, res, body) => {
                         assert.ifError(err);
-                        substituted_id_list = body.id;
-                        done();
+                        overlay_id_list = JSON.parse(body).id;
+
+                        publishCandidate(overlay_id_list, cookie_o2r, () => {
+
+                            // substitution
+                            let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r);
+                            request(req_substitution, (err, res, body) => {
+                                assert.ifError(err);
+                                substituted_id_list = body.id;
+                                done();
+                            });
+                        });
                     });
                 });
             });
@@ -126,12 +133,17 @@ describe('Simple substitution of data', function () {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            // second upload
-            request(req_overlay01, (err, res, body) => {
-                assert.ifError(err);
-                overlay_id = JSON.parse(body).id;
+            publishCandidate(base_id, cookie_o2r, () => {
 
-                done();
+                // second upload
+                request(req_overlay01, (err, res, body) => {
+                    assert.ifError(err);
+                    overlay_id = JSON.parse(body).id;
+
+                    publishCandidate(overlay_id, cookie_o2r, () => {
+                        done();
+                    });
+                });
             });
         });
         this.timeout(30000);
@@ -144,10 +156,10 @@ describe('Simple substitution of data', function () {
         let base_file = "BerlinMit.csv";
         let overlay_file = "BerlinOhne.csv";
 
-        it('should respond with HTTP 200 OK', (done) => {
+        it('should respond with HTTP 200 OK and valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -160,11 +172,10 @@ describe('Simple substitution of data', function () {
         it('should respond with valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    assert.isObject(body, 'returned JSON');
                     done();
                 });
             });
@@ -172,14 +183,17 @@ describe('Simple substitution of data', function () {
 
         it('should respond with valid ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.property(body, 'id');
                     assert.isString(body.id);
                     substituted_id = body.id;
-                    done();
+
+                    publishCandidate(substituted_id, cookie_o2r, () => {
+                        done();
+                    });
                 });
             });
         }).timeout(requestLoadingTimeout);
@@ -225,7 +239,7 @@ describe('Simple substitution of data', function () {
 
         it('should respond with correct substitution file list with multiple overlays', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 req.json.substitutionFiles.push({ base: "Dockerfile", overlay: "erc.yml" });
                 req.json.substitutionFiles.push({ base: "main.Rmd", overlay: "Dockerfile" });
@@ -236,13 +250,15 @@ describe('Simple substitution of data', function () {
                     assert.isString(body.id);
                     substituted_id_moreOverlays = body.id;
 
-                    request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
-                        assert.ifError(err);
-                        let response = JSON.parse(body);
-                        assert.property(response.metadata.substitution, 'substitutionFiles');
-                        assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
+                    publishCandidate(substituted_id_moreOverlays, cookie_o2r, () => {
+                        request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
+                            assert.ifError(err);
+                            let response = JSON.parse(body);
+                            assert.property(response.metadata.substitution, 'substitutionFiles');
+                            assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
 
-                        done();
+                            done();
+                        });
                     });
                 });
             });
@@ -255,17 +271,12 @@ describe('Simple substitution of data', function () {
                 assert.property(response.metadata.substitution, 'substitutionFiles');
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
 
-                let ERC_path = path.join(config.fs.compendium, response.id, "/data");
-                let bind = " -v " + ERC_path + ":/erc"
-                let bind01 = " -v " + path.join(ERC_path, "BerlinOhne.csv") + ":" + path.join("/erc", "BerlinMit.csv") + ":ro"
-                let bind02 = " -v " + path.join(ERC_path, "overlay_erc.yml") + ":" + path.join("/erc", "Dockerfile") + ":ro"
-                let bind03 = " -v " + path.join(ERC_path, "overlay_Dockerfile") + ":" + path.join("/erc", "main.Rmd") + ":ro"
-                let ercCmd = "'" + config.docker.cmd + bind + bind01 + bind02 + bind03 + " " + config.docker.imageNamePrefix + response.id + "'";
-
                 let yamlPath = path.join(config.fs.compendium, substituted_id_moreOverlays, "data", "erc.yml");
                 let dockerCmd = config.docker.cmd;
                 let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.equal(doc.execution.cmd, ercCmd);
+                assert.include(doc.execution.cmd, "BerlinOhne.csv:" + path.join("/erc", "BerlinMit.csv") + ":ro");
+                assert.include(doc.execution.cmd, "overlay_erc.yml:" + path.join("/erc", "Dockerfile") + ":ro");
+                assert.include(doc.execution.cmd, "overlay_Dockerfile:" + path.join("/erc", "main.Rmd") + ":ro");
                 done();
             });
         }).timeout(requestLoadingTimeout);
@@ -310,7 +321,7 @@ describe('Simple substitution of data', function () {
 
         it('should respond with HTTP 200 OK', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -323,7 +334,7 @@ describe('Simple substitution of data', function () {
         it('should respond with valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -335,14 +346,17 @@ describe('Simple substitution of data', function () {
 
         it('should respond with valid ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.property(body, 'id');
                     assert.isString(body.id);
                     substituted_id = body.id;
-                    done();
+
+                    publishCandidate(substituted_id, cookie_o2r, () => {
+                        done();
+                    });
                 });
             });
         }).timeout(requestLoadingTimeout);
@@ -406,7 +420,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of invalid base ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -424,7 +438,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of missing base ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
                 delete req.json.base;
 
                 request(req, (err, res, body) => {
@@ -444,7 +458,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of invalid overlay ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -463,7 +477,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of missing overlay ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
                 delete req.json.overlay;
 
                 request(req, (err, res, body) => {
@@ -482,7 +496,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of invalid base file', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -500,7 +514,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of invalid overlay file', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -518,7 +532,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of empty substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
                 req.json.substitutionFiles = [];   // set Array of substitutionFiles empty
 
                 request(req, (err, res, body) => {
@@ -537,7 +551,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of no substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
                 delete req.json.substitutionFiles;
 
                 request(req, (err, res, body) => {
@@ -556,7 +570,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of no overlay file in substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
                 req.json.substitutionFiles = [{
                     base: "BerlinMit.csv"
                 }];
@@ -577,7 +591,7 @@ describe('Simple substitution of data', function () {
 
         it('should fail the substitution because of no base file in substitution files', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
                 req.json.substitutionFiles = [{
                     overlay: "BerlinOhne.csv"
                 }];
