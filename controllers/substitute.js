@@ -57,7 +57,7 @@ var Compendium = require('../lib/model/compendium');
                       err.msg = 'base ID is invalid';
                       reject(err);
                     } else {
-                      debug('[%s] Requesting metadata of base compendium with id - %s - successfull.', passon.id, passon.metadata.substitution.base);
+                      debug('[%s] Requesting metadata of base compendium with id - %s - successful.', passon.id, passon.metadata.substitution.base);
                       passon.baseMetaData = res.metadata;
                       fulfill(passon);
                     }
@@ -73,7 +73,7 @@ var Compendium = require('../lib/model/compendium');
  }
 
  /**
-  * function to check if overlay compenduim exists
+  * function to check if overlay compendium exists
   * @param {object} passon - new compendium id and data of origin compendia
   */
   function checkOverlayId (passon) {
