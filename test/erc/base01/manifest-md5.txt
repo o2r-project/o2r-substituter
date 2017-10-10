@@ -1,0 +1,8 @@
+8ec13ada27c2e6ddd304003442d5dd63  data/BerlinMit.csv
+5cab62eef68ccda54640d8fcaf08194c  data/Dockerfile
+78e09197309da039e1df42ef3d3369ee  data/erc.yml
+3182c34f93123f334ff9f53286bab9d6  data/main.Rmd
+cbe425bd9571662253efc4f61eedeb91  data/.erc/erc_spec.zip
+a2515f9ac3e95b7bb55ae5f4b57de421  data/.erc/meta_2017081012114611_main_Rmd_.json
+6b9dbd7992e7a829b710445814e486db  data/.erc/metadata_raw.json
+1f4c31de0dd077ee27fce18ebd20adef  data/.erc/metadata_zenodo.json

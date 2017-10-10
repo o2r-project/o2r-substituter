@@ -19,8 +19,10 @@ const request = require('request');
 const tmp = require('tmp');
 const AdmZip = require('adm-zip');
 const fs = require('fs');
+const config = require('../config/config')
+const path = require('path');
 
-function createCompendiumPostRequest(path, cookie) {
+function uploadCompendium(path, cookie) {
   var zip = new AdmZip();
   zip.addLocalFolder(path);
   var tmpfile = tmp.tmpNameSync() + '.zip';
@@ -28,7 +30,7 @@ function createCompendiumPostRequest(path, cookie) {
   zip.writeZip(tmpfile);
 
   let formData = {
-    'content_type': 'compendium_v1',
+    'content_type': 'compendium',
     'compendium': {
       value: fs.createReadStream(tmpfile),
       options: {
@@ -42,7 +44,7 @@ function createCompendiumPostRequest(path, cookie) {
   j.setCookie(ck, global.test_host);
 
   let reqParams = {
-    uri: global.test_host + '/api/v1/compendium',
+    uri: global.test_host_upload + '/api/v1/compendium',
     method: 'POST',
     jar: j,
     formData: formData,
@@ -50,7 +52,74 @@ function createCompendiumPostRequest(path, cookie) {
   };
 
   return (reqParams);
+};
+
+function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie) {
+
+  let substitutionObject = {
+    base: base_id,
+    overlay: overlay_id,
+    substitutionFiles: [
+      {
+        base: base_file,
+        overlay: overlay_file
+      }
+    ]
+  }
+
+  let j = request.jar();
+  let ck = request.cookie('connect.sid=' + cookie);
+  j.setCookie(ck, global.test_host);
+
+  let reqParams = {
+    uri: global.test_host + '/api/v1/substitution',
+    method: 'POST',
+    jar: j,
+    json: substitutionObject,
+    timeout: 10000
+  };
+
+  return (reqParams);
+};
+
+// publish a candidate with a direct copy of the metadata
+publishCandidate = function (compendium_id, cookie, done) {
+  let j = request.jar();
+  let ck = request.cookie('connect.sid=' + cookie);
+  j.setCookie(ck, global.test_host);
+
+  let getMetadata = {
+    uri: global.test_host_read + '/api/v1/compendium/' + compendium_id,
+    method: 'GET',
+    jar: j,
+    timeout: 10000
+  };
+
+  let updateMetadata = {
+    uri: global.test_host_read + '/api/v1/compendium/' + compendium_id + '/metadata',
+    method: 'PUT',
+    jar: j,
+    timeout: 10000
+  };
+
+  request(getMetadata, (err, res, body) => {
+    if (err || body.error) {
+      console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
+    } else {
+      let response = JSON.parse(body);
+      updateMetadata.json = { o2r: response.metadata.o2r };
+
+      request(updateMetadata, (err, res, body) => {
+        if (err || body.error) {
+          console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
+        } else {
+          done();
+        }
+      });
+    }
+  });
 }
 
-
-module.exports.createCompendiumPostRequest = createCompendiumPostRequest;
+module.exports.uploadCompendium = uploadCompendium;
+module.exports.createSubstitutionPostRequest = createSubstitutionPostRequest;
+module.exports.publishCandidate = publishCandidate;

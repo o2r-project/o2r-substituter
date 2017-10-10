@@ -20,19 +20,25 @@ var mongojs = require('mongojs');
 const config = require('../config/config');
 
 // test parameters for local session authentication directly via fixed database entries
-var orcid = '0000-0001-6021-1617';
-var sessionId = 'C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo';
+var orcid_o2r = '0000-0001-6021-1617';
+var sessionId_o2r = 'C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo';
 
 var env = process.env;
-global.test_host = env.TEST_HOST ||  'http://localhost:' + config.net.port;
-console.log('Testing endpoint at ' + global.test_host);
+global.test_host = env.TEST_HOST || 'http://localhost:' + config.net.port;
+global.test_host_read = env.TEST_HOST_READ || 'http://localhost:8080';
+global.test_host_upload = env.TEST_HOST_UPLOAD || 'http://localhost:8088';
+console.log('Testing endpoint at ' + global.test_host + ' using ' + global.test_host_read + ' for reading and ' + global.test_host_upload + ' for uploading');
 
 before(function () {
     let dbpath = 'localhost/' + config.mongo.database;
-    var db = mongojs(dbpath, ['users', 'sessions']);
+    var db = mongojs(dbpath, ['users', 'sessions', 'compendia']);
 
-    var session = {
-        '_id': sessionId,
+    db.sessions.drop(function (err, doc) {
+        //
+    });
+
+    var session_o2r = {
+        '_id': sessionId_o2r,
         'session': {
             'cookie': {
                 'originalMaxAge': null,
@@ -43,22 +49,20 @@ before(function () {
                 'path': '/'
             },
             'passport': {
-                'user': orcid
+                'user': orcid_o2r
             }
         }
     }
-    db.sessions.save(session, function (err, doc) {
-        //console.log(doc);
+    db.sessions.save(session_o2r, function (err, doc) {
         if (err) throw err;
     });
     var o2ruser = {
         '_id': '57dc171b8760d15dc1864044',
-        'orcid': orcid,
+        'orcid': orcid_o2r,
         'level': 100,
         'name': 'o2r-testuser'
     };
     db.users.save(o2ruser, function (err, doc) {
-        //console.log(doc);
         if (err) throw err;
     });
 

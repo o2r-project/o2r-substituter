@@ -17,17 +17,21 @@
 
 const config = require('./config/config');
 config.version = require('./package.json').version;
-const debug = require('debug')('subsituter');
+const debug = require('debug')('substituter');
 const mongoose = require('mongoose');
 const backoff = require('backoff');
 
-// check fs & create dirs if necessary
 const fse = require('fs-extra');
 fse.mkdirsSync(config.fs.base);
 fse.mkdirsSync(config.fs.compendium);
+const yaml = require('js-yaml');
 
+mongoose.Promise = global.Promise;
 const dbURI = config.mongo.location + config.mongo.database;
-mongoose.connect(dbURI);
+mongoose.connect(dbURI, {
+  useMongoClient: true,
+  promiseLibrary: global.Promise
+});
 mongoose.connection.on('error', (err) => {
   debug('Could not connect to MongoDB @ %s: %s', dbURI, err);
 });
@@ -39,6 +43,10 @@ const app = express();
 const responseTime = require('response-time');
 const bodyParser = require('body-parser');
 const randomstring = require('randomstring');
+
+var controllers = {};
+controllers.substitute = require('./controllers/substitute');
+controllers.substitutions = require('./controllers/substitutions');
 
 app.use((req, res, next) => {
   debug(req.method + ' ' + req.path);
@@ -79,7 +87,7 @@ function initApp(callback) {
     // configure express-session, stores reference to authdetails in cookie.
     // authdetails themselves are stored in MongoDBStore
     var mongoStore = new MongoDBStore({
-      uri: config.mongo.location + config.mongo.database,
+      uri: dbURI,
       collection: 'sessions'
     }, err => {
       if (err) {
@@ -105,31 +113,71 @@ function initApp(callback) {
     /*
      * configure routes
      */
+    var Compendium = require('./lib/model/compendium');
+
     app.post('/api/v1/substitution', (req, res) => {
-      if (!req.isAuthenticated() || req.user.level < config.user.level.substitute) {
-        res.status(401).send('{"error":"not authenticated or not allowed"}');
+      res.setHeader('Content-Type', 'application/json');
+      if (!req.isAuthenticated()) {
+        res.status(401).send('{"error":"not authenticated"}');
+        return;
+      }
+      if (req.user.level < config.user.level.substitute) {
+        res.status(401).send('{"error":"not allowed"}');
         return;
       }
 
-      // TODO implement ...
-    });
-    
-    app.get('/api/v1/compedium/:id/substition', function (req, res) {
-      res.setHeader('Content-Type', 'application/json');
-      
-      // query substitions for given id from database
+      // new random id
+      let newID = randomstring.generate(config.id_length);
 
-      // create response
-      var response = {};
-      res.send(response);
+      let passon = {
+        user: req.user.orcid,
+        id: newID,
+        metadata: {
+          substituted: true,
+          substitution: req.body
+        }
+      };
+      debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
+      return controllers.substitute.getMetadata(passon)   // get metadata
+        .then(controllers.substitute.checkOverlayId)      // check ERC id of overlay ERC
+        .then(controllers.substitute.createFolder)         // create folder with id
+        .then(controllers.substitute.copyBaseFiles)       // copy base files into folder
+        .then(controllers.substitute.copyOverlayFiles)    // copy overlay files into folder
+        .then(controllers.substitute.createVolumeBinds)  // create metadata for writing to yaml
+        .then(controllers.substitute.writeYaml)             // write docker run cmd to erc.yml
+        .then(controllers.substitute.saveToDB)             // save to DB
+        .then((passon) => {
+          debug('[%s] Finished substitution of new compendium.', passon.id);
+          res.status(200).send({ 'id': passon.id });
+        })
+        .catch(err => {
+          debug('[%s] - Error during substitution \n %s', passon.id, JSON.stringify(err));
+
+          let status = 500;
+          if (err.status) {
+            status = err.status;
+          }
+          let msg = 'Internal error';
+          if (err.msg) {
+            msg = err.msg;
+          }
+          res.status(status).send({ err: msg });
+        });
     });
 
-    app.listen(config.net.port, () => {
-      debug('substitution %s with API version %s waiting for requests on port %s',
+    // GET list of subtsitution
+    app.get('/api/v1/substitution', controllers.substitutions.view);
+    // GET list of related substitutions by filter "base" and/or "overlay"
+
+
+    var server = app.listen(config.net.port, () => {
+      debug('substituter %s with API version %s waiting for requests on port %s',
         config.version,
         config.api_version,
         config.net.port);
     });
+    server.timeout = 30000;
+
   } catch (err) {
     callback(err);
   }
@@ -166,8 +214,9 @@ dbBackoff.on('ready', function (number, delay) {
             debug('Mongoose: Disconnected all connections.');
           });
           dbBackoff.backoff();
+        } else {
+          debug('Started application.');
         }
-        debug('Started application.');
       });
     }
   });

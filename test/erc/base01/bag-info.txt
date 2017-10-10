@@ -1,0 +1,4 @@
+Bag-Size: 4,9 KB
+Bagging-Date: 2017-08-10
+ERC-Version: 1
+Payload-Oxum: 64166.8

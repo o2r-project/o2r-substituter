@@ -18,6 +18,7 @@ var c = {};
 c.net = {};
 c.mongo = {};
 c.fs = {};
+c.mount = {};
 var env = process.env;
 
 c.api_version = 1;
@@ -36,13 +37,27 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 }
 
 // fs paths
-c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/';
+c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/'; // '/tmp/o2r-dev/';
 c.fs.compendium = c.fs.base + 'compendium/';
 
-c.id_length = 6; // length of compendium ids [0-9,a-z,A-Z]
+// metadata extraction and brokering options
+c.meta = {};
+c.meta.substituted = 'metadata.substituted';
+c.meta.base = 'metadata.substitution.base';
+c.meta.overlay = 'metadata.substitution.overlay';
+
+// docker commands
+c.docker = {};
+c.docker.cmd = 'docker run -it --rm';
+c.docker.imageNamePrefix = 'bagtainer:';
+
+c.id_length = 5; // length of substituted ids [0-9,a-z,A-Z]
 
 // session secret
 c.sessionsecret = env.SESSION_SECRET || 'o2r';
+
+// filename prepend of substitution file
+c.substitutionFilePrepend = 'overlay_';
 
 // authentication levels
 c.user = {};
