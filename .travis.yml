@@ -25,12 +25,6 @@ before_script:
   - sleep 10
 script:
   - SUBSTITUTER_BASEPATH=$HOME/ npm test
-after_script:
-  - sleep 5
-  - docker logs mongodb
-  - docker logs testloader
-  - docker logs testmuncher
-  - docker logs testsubstituter
 after_failure:
   - sleep 5
   - docker logs mongodb
