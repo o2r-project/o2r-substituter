@@ -6,13 +6,7 @@ Node.js implementation to load compendia from third party repositories and handl
 
 Currently, it implements the endpoint `/api/v1/substitution`.
 
-## Features
-
-- ...
-
 ## Requirements
-
-Requirements:
 
 - Node.js `>= 6.2`
 - npm
@@ -46,6 +40,13 @@ npm test
 ## Dockerfile
 
 The file `Dockerfile` is the basis for the Docker image published at [Docker Hub](https://hub.docker.com/r/o2rproject/o2r-substituter/).
+
+To build and run locally use
+
+```bash
+docker build --tag substituter .
+docker run -it -e DEBUG=* substituter
+```
 
 ## License
 
