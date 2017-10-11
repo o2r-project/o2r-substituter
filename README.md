@@ -16,7 +16,7 @@ Currently, it implements the endpoint `/api/v1/substitution`.
 The configuration can be done via environment variables.
 
 - `SUBSTITUTER_PORT`
-  Define on which port substituter should listen. Defaults to `8089`.
+  Define on which port substituter should listen. Defaults to `8090`.
 - `SUBSTITUTER_MONGODB` __Required__
   Location for the MongoDB. Defaults to `mongodb://localhost/`. You will very likely need to change this.
 - `SUBSTITUTER_MONGODB_DATABASE`
