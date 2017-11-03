@@ -114,14 +114,14 @@ var Compendium = require('../lib/model/compendium');
  */
 function createFolder(passon) {
     return new Promise((fulfill, reject) => {
-        var outputPath = path.join(config.fs.compendium, passon.id, 'data');
+        var outputPath = path.join(config.fs.compendium, passon.id);
         debug('[%s] Creating folder for new compendium ...', passon.id);
         try {
             fse.mkdirsSync(outputPath);
             debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
             passon.substitutedPath = outputPath;
-            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base, 'data');
-            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay, 'data');
+            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
+            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
             passon.basePath = basePath;
             passon.overlayPath = overlayPath;
             fulfill(passon);
@@ -316,9 +316,7 @@ function saveToDB(passon) {
         debug('[%s] Starting creating volume binds with image [%s] ...',passon.id, passon.imageTag);
         let substFiles = passon.metadata.substitution.substitutionFiles;
         // data folder for erc.yaml
-// let containerBinds = new Array();
-        let baseBind = path.join(config.fs.compendium, passon.id, 'data') + ":" + "/erc";
-// containerBinds.push(baseBind);
+        let baseBind = path.join(config.fs.compendium, passon.id) + ":" + "/erc";
         // for erc.yml
         let cmdBinds = new Array();
         let cmdBaseBind = "-v " + baseBind;
@@ -328,7 +326,6 @@ function saveToDB(passon) {
             if (!filenameNotExists(substFiles[i].filename) == true) {
                 bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc", substFiles[i].base) + ":ro";
             }
-// containerBinds.push(bind);
             let cmdBind = "-v " + bind;
             cmdBinds.push(cmdBind);
         }
