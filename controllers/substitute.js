@@ -235,16 +235,17 @@ function copyOverlayFiles(passon) {
                         overlayFilePath =  overlayFilePath.substring(splitter);
                     }
                     try {
-                        let overlayfile = path.join(passon.overlayPath, overlayFilePath);
-                        let substoverlayfile = path.join(passon.substitutedPath, substFiles[i].overlay);
-                        if (fse.existsSync(substoverlayfile)) {
-                            let newoverlayfilename = path.join(prefix, config.substitutionFilePrepend + overlayFilePath);
+                        let overlayfile = path.join(passon.overlayPath, prefix, overlayFilePath); // path of overlay file
+                        let substitutedPathAndOverlayFile = path.join(passon.substitutedPath, overlayFilePath); // path for substituted overlayfile
+                        if (fse.existsSync(substitutedPathAndOverlayFile)) {
+                            let newoverlayfilename = path.join(config.substitutionFilePrepend + overlayFilePath);
                             let newoverlayfilepath = path.join(passon.substitutedPath, newoverlayfilename);
                             fse.copySync(overlayfile, newoverlayfilepath);
                             substFiles[i].filename = newoverlayfilename;
                         } else {
-                            let newoverlayfilepath = path.join(passon.substitutedPath, prefix, overlayFilePath);
+                            let newoverlayfilepath = path.join(passon.substitutedPath, overlayFilePath);
                             fse.copySync(overlayfile, newoverlayfilepath);
+                            substFiles[i].overlay = overlayFilePath;
                         }
                     } catch(err) {
                         debug('[%s] Error copying overlay files to directory of new compendium - err:\n%s', passon.id, err);
@@ -323,7 +324,7 @@ function saveToDB(passon) {
         cmdBinds.push(cmdBaseBind);
         for (let i=0; i< substFiles.length; i++) {
             let bind = path.join(passon.substitutedPath, substFiles[i].overlay) + ":" + path.join("/erc", substFiles[i].base) + ":ro";
-            if (!filenameNotExists(substFiles[i].filename) == true) {
+            if (filenameNotExists(substFiles[i].filename) == false) {
                 bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc", substFiles[i].base) + ":ro";
             }
             let cmdBind = "-v " + bind;
@@ -371,8 +372,8 @@ function saveToDB(passon) {
  function writeYaml(passon) {
    return new Promise((fulfill, reject) => {
       debug('[%s] Starting write yaml ...', passon.id);
+      let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
        try {
-          let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
           let dockerCmd = config.docker.cmd;
           let yamlBinds = passon.yaml.binds;
           for (let i=0; i<yamlBinds.length; i++) {
