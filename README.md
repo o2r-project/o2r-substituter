@@ -6,13 +6,7 @@ Node.js implementation to load compendia from third party repositories and handl
 
 Currently, it implements the endpoint `/api/v1/substitution`.
 
-## Features
-
-- ...
-
 ## Requirements
-
-Requirements:
 
 - Node.js `>= 6.2`
 - npm
@@ -22,7 +16,7 @@ Requirements:
 The configuration can be done via environment variables.
 
 - `SUBSTITUTER_PORT`
-  Define on which port substituter should listen. Defaults to `8089`.
+  Define on which port substituter should listen. Defaults to `8090`.
 - `SUBSTITUTER_MONGODB` __Required__
   Location for the MongoDB. Defaults to `mongodb://localhost/`. You will very likely need to change this.
 - `SUBSTITUTER_MONGODB_DATABASE`
@@ -46,6 +40,13 @@ npm test
 ## Dockerfile
 
 The file `Dockerfile` is the basis for the Docker image published at [Docker Hub](https://hub.docker.com/r/o2rproject/o2r-substituter/).
+
+To build and run locally use
+
+```bash
+docker build --tag substituter .
+docker run -it -e DEBUG=* substituter
+```
 
 ## License
 

@@ -23,19 +23,17 @@ RUN echo \
 # Add app and dependencies
 RUN apk add --no-cache \
     nodejs \
-    nodejs-npm \
-    git \
-    ca-certificates \
-    wget \
     dumb-init \
-  && git clone --depth 1 -b master https://github.com/o2r-project/o2r-substituter /substituter \
-  && apk del git \
-    wget \
-    ca-certificates \
+    nodejs-npm \
   && rm -rf /var/cache
 
 # Install app
 WORKDIR /substituter
+COPY config config
+COPY controllers controllers
+COPY lib lib
+COPY index.js index.js
+COPY package.json package.json
 RUN npm install --production
 
 # Metadata params provided with docker build command

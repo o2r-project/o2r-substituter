@@ -24,7 +24,7 @@ var env = process.env;
 c.api_version = 1;
 
 // network & database
-c.net.port = env.SUBSTITUTER_PORT || 8089;
+c.net.port = env.SUBSTITUTER_PORT || 8090;
 c.mongo.location = env.SUBSTITUTER_MONGODB || 'mongodb://localhost/';
 c.mongo.database = env.SUBSTITUTER_MONGODB_DATABASE || 'muncher';
 c.mongo.inital_connection_attempts = 30;
