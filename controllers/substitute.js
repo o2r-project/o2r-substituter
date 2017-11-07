@@ -114,7 +114,12 @@ var Compendium = require('../lib/model/compendium');
  */
 function createFolder(passon) {
     return new Promise((fulfill, reject) => {
-        var outputPath = path.join(config.fs.compendium, passon.id);
+        // check if compendium is a bag
+        if (passon.baseMetaData.bag) {
+            var outputPath = path.join(config.fs.compendium, 'data', passon.id);
+        } else {
+            var outputPath = path.join(config.fs.compendium, passon.id);
+        }
         debug('[%s] Creating folder for new compendium ...', passon.id);
         try {
             fse.mkdirsSync(outputPath);
@@ -372,12 +377,7 @@ function saveToDB(passon) {
  function writeYaml(passon) {
    return new Promise((fulfill, reject) => {
       debug('[%s] Starting write yaml ...', passon.id);
-      // check if compendium is a bag
-      if (passon.baseMetaData.bag) {
-          let yamlPath = path.join(passon.substitutedPath, 'data', 'erc.yml');
-      } else {
-          let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
-      }
+      let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
       // check if erc.yml exists
       if (fse.existsSync(yamlPath)) {
       try {
