@@ -372,8 +372,15 @@ function saveToDB(passon) {
  function writeYaml(passon) {
    return new Promise((fulfill, reject) => {
       debug('[%s] Starting write yaml ...', passon.id);
-      let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
-       try {
+      // check if compendium is a bag
+      if (passon.baseMetaData.bag) {
+          let yamlPath = path.join(passon.substitutedPath, 'data', 'erc.yml');
+      } else {
+          let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
+      }
+      // check if erc.yml exists
+      if (fse.existsSync(yamlPath)) {
+      try {
           let dockerCmd = config.docker.cmd;
           let yamlBinds = passon.yaml.binds;
           for (let i=0; i<yamlBinds.length; i++) {
@@ -396,6 +403,13 @@ function saveToDB(passon) {
           debug("[%s] Error writing erc.yml - err: %s", passon.id, err);
           cleanup(passon);
           reject("Error writing erc.yml in: %s", yamlPath);
+     }
+     } else {
+        debug("[%s] missing configuration file (erc.yml) in base compendium, please execute a job for the base compedium first", passon.id);
+        var err = new Error();
+        err.status = 400;
+        err.msg = 'missing configuration file in base compendium, please execute a job for the base compedium first';
+        reject(err);
      }
    })
  };
