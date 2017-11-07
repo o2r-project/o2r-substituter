@@ -116,7 +116,7 @@ function createFolder(passon) {
     return new Promise((fulfill, reject) => {
         // check if compendium is a bag
         if (passon.baseMetaData.bag) {
-            var outputPath = path.join(config.fs.compendium, 'data', passon.id);
+            var outputPath = path.join(config.fs.compendium, passon.id, 'data');
         } else {
             var outputPath = path.join(config.fs.compendium, passon.id);
         }
