@@ -114,14 +114,19 @@ var Compendium = require('../lib/model/compendium');
  */
 function createFolder(passon) {
     return new Promise((fulfill, reject) => {
-        var outputPath = path.join(config.fs.compendium, passon.id, 'data');
+        // check if compendium is a bag
+        if (passon.baseMetaData.bag) {
+            var outputPath = path.join(config.fs.compendium, passon.id, 'data');
+        } else {
+            var outputPath = path.join(config.fs.compendium, passon.id);
+        }
         debug('[%s] Creating folder for new compendium ...', passon.id);
         try {
             fse.mkdirsSync(outputPath);
             debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
             passon.substitutedPath = outputPath;
-            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base, 'data');
-            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay, 'data');
+            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
+            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
             passon.basePath = basePath;
             passon.overlayPath = overlayPath;
             fulfill(passon);
@@ -235,16 +240,17 @@ function copyOverlayFiles(passon) {
                         overlayFilePath =  overlayFilePath.substring(splitter);
                     }
                     try {
-                        let overlayfile = path.join(passon.overlayPath, overlayFilePath);
-                        let substoverlayfile = path.join(passon.substitutedPath, substFiles[i].overlay);
-                        if (fse.existsSync(substoverlayfile)) {
-                            let newoverlayfilename = path.join(prefix, config.substitutionFilePrepend + overlayFilePath);
+                        let overlayfile = path.join(passon.overlayPath, prefix, overlayFilePath); // path of overlay file
+                        let substitutedPathAndOverlayFile = path.join(passon.substitutedPath, overlayFilePath); // path for substituted overlayfile
+                        if (fse.existsSync(substitutedPathAndOverlayFile)) {
+                            let newoverlayfilename = path.join(config.substitutionFilePrepend + overlayFilePath);
                             let newoverlayfilepath = path.join(passon.substitutedPath, newoverlayfilename);
                             fse.copySync(overlayfile, newoverlayfilepath);
                             substFiles[i].filename = newoverlayfilename;
                         } else {
-                            let newoverlayfilepath = path.join(passon.substitutedPath, prefix, overlayFilePath);
+                            let newoverlayfilepath = path.join(passon.substitutedPath, overlayFilePath);
                             fse.copySync(overlayfile, newoverlayfilepath);
+                            substFiles[i].overlay = overlayFilePath;
                         }
                     } catch(err) {
                         debug('[%s] Error copying overlay files to directory of new compendium - err:\n%s', passon.id, err);
@@ -316,19 +322,16 @@ function saveToDB(passon) {
         debug('[%s] Starting creating volume binds with image [%s] ...',passon.id, passon.imageTag);
         let substFiles = passon.metadata.substitution.substitutionFiles;
         // data folder for erc.yaml
-// let containerBinds = new Array();
-        let baseBind = path.join(config.fs.compendium, passon.id, 'data') + ":" + "/erc";
-// containerBinds.push(baseBind);
+        let baseBind = path.join(config.fs.compendium, passon.id) + ":" + "/erc";
         // for erc.yml
         let cmdBinds = new Array();
         let cmdBaseBind = "-v " + baseBind;
         cmdBinds.push(cmdBaseBind);
         for (let i=0; i< substFiles.length; i++) {
             let bind = path.join(passon.substitutedPath, substFiles[i].overlay) + ":" + path.join("/erc", substFiles[i].base) + ":ro";
-            if (!filenameNotExists(substFiles[i].filename) == true) {
+            if (filenameNotExists(substFiles[i].filename) == false) {
                 bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc", substFiles[i].base) + ":ro";
             }
-// containerBinds.push(bind);
             let cmdBind = "-v " + bind;
             cmdBinds.push(cmdBind);
         }
@@ -374,8 +377,10 @@ function saveToDB(passon) {
  function writeYaml(passon) {
    return new Promise((fulfill, reject) => {
       debug('[%s] Starting write yaml ...', passon.id);
-       try {
-          let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
+      let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
+      // check if erc.yml exists
+      if (fse.existsSync(yamlPath)) {
+      try {
           let dockerCmd = config.docker.cmd;
           let yamlBinds = passon.yaml.binds;
           for (let i=0; i<yamlBinds.length; i++) {
@@ -398,6 +403,13 @@ function saveToDB(passon) {
           debug("[%s] Error writing erc.yml - err: %s", passon.id, err);
           cleanup(passon);
           reject("Error writing erc.yml in: %s", yamlPath);
+     }
+     } else {
+        debug("[%s] missing configuration file (erc.yml) in base compendium, please execute a job for the base compedium first", passon.id);
+        var err = new Error();
+        err.status = 400;
+        err.msg = 'missing configuration file in base compendium, please execute a job for the base compedium first';
+        reject(err);
      }
    })
  };
