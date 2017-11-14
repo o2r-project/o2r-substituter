@@ -22,6 +22,7 @@ const fse = require('fs-extra');
 const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
+const sleep = require('sleep');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
@@ -31,68 +32,60 @@ const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 const publishCandidate = require('./util').publishCandidate;
 
-describe('List all substitutions including one substitution', function () {
-    var substituted_id_list;
-    var amount_substitutions;
+describe('Empty service without substitutions', function () {
 
-    before(function (done) {
-        this.timeout(30000);
-
+    it('should respond with HTTP 200 OK and an empty response list', (done) => {
         request(global.test_host + '/api/v1/substitution', (err, res, body) => {
             assert.ifError(err);
-            let response = JSON.parse(body);
-            if (Array.isArray(response.results)) {
-                amount_substitutions = response.results.length;
-            } else { amount_substitutions = 0; }
+            assert.equal(res.statusCode, 200);
+            response = JSON.parse(body);
+            assert.notProperty(response, 'error');
+            assert.property(response, 'results');
+            assert.lengthOf(response.results, 0);
             done();
         });
-    })
+    });
+});
 
-    beforeEach(function (done) {
-        let req_base01 = uploadCompendium('./test/erc/base02', cookie_o2r); // or './test/erc/base01'
-        let req_overlay01 = uploadCompendium('./test/erc/overlay02', cookie_o2r); // or './test/erc/overlay01'
-        var base_id_list;
-        var overlay_id_list;
-        let base_file_list = "data/BerlinMit.csv";
-        let overlay_file_list = "data/BerlinOhne.csv";
+describe.only('List substitutions', function () {
+    var substitution_id;
 
-        this.timeout(30000);
+    before(function (done) {
+        this.timeout(60000);
 
-        request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+        let req_base02 = uploadCompendium('./test/erc/base02', cookie_o2r); // or './test/erc/base01'
+        let req_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r); // or './test/erc/overlay01'
+        var base_id;
+        var overlay_id;
+        let base_file = "BerlinMit.csv";
+        let overlay_file = "BerlinOhne.csv";
+
+        // first upload
+        request(req_base02, (err, res, body) => {
             assert.ifError(err);
-            let response = JSON.parse(body);
-            if (Array.isArray(response.results)) {
-                amount_substitutions = response.results.length;
-            } else { amount_substitutions = 0; }
+            base_id = JSON.parse(body).id;
 
-            // first upload
-            request(req_base01, (err, res, body) => {
-                assert.ifError(err);
-                base_id_list = JSON.parse(body).id;
+            publishCandidate(base_id, cookie_o2r, () => {
 
-                publishCandidate(base_id_list, cookie_o2r, () => {
+                // second upload
+                request(req_overlay02, (err, res, body) => {
+                    assert.ifError(err);
+                    overlay_id = JSON.parse(body).id;
 
-                    // second upload
-                    request(req_overlay01, (err, res, body) => {
-                        assert.ifError(err);
-                        overlay_id_list = JSON.parse(body).id;
+                    publishCandidate(overlay_id, cookie_o2r, () => {
 
-                        publishCandidate(overlay_id_list, cookie_o2r, () => {
-
-                            // substitution
-                            let req_substitution = createSubstitutionPostRequest(base_id_list, overlay_id_list, base_file_list, overlay_file_list, cookie_o2r);
-                            request(req_substitution, (err, res, body) => {
-                                assert.ifError(err);
-                                substituted_id_list = body.id;
-                                done();
-                            });
+                        // substitution
+                        let req_substitution = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
+                        request(req_substitution, (err, res, body) => {
+                            assert.ifError(err);
+                            substitution_id = body.id;
+                            done();
                         });
                     });
                 });
             });
         });
-        this.timeout(30000);
-    });
+    })
 
     describe('GET /api/v1/substitution response with list of ERC ids', () => {
         it('should respond with HTTP 200 OK', (done) => {
@@ -102,6 +95,7 @@ describe('List all substitutions including one substitution', function () {
                 done();
             });
         });
+
         it('should respond with valid JSON document without error and one substitution', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 assert.ifError(err);
@@ -111,8 +105,8 @@ describe('List all substitutions including one substitution', function () {
                 assert.property(response, 'results');
 
                 assert.isArray(response.results);
-                assert.equal(response.results.length, (amount_substitutions + 1));
-                assert.include(response.results, substituted_id_list);
+                assert.equal(response.results.length, 1);
+                assert.include(response.results, substitution_id);
                 done();
             });
         });
@@ -146,7 +140,6 @@ describe('Simple substitution of data', function () {
                 });
             });
         });
-        this.timeout(30000);
     });
 
     // use two compendia (uploaded before) to run substitution

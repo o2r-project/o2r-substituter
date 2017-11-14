@@ -21,22 +21,16 @@ const debug = require('debug')('substituter');
 const path = require('path');
 const exec = require('child_process').exec;
 const errorMessageHelper = require('../lib/error-message');
-
-var Stream = require('stream');
+const Stream = require('stream');
 const clone = require('clone');
-
-// check fs & create dirs if necessary
 const fse = require('fs-extra');
-// fse.mkdirsSync(config.fs.base);
-// fse.mkdirsSync(config.fs.incoming);
-// fse.mkdirsSync(config.fs.compendium);
 const yaml = require('js-yaml');
 const writeyaml = require('write-yaml');
 
 var Compendium = require('../lib/model/compendium');
 
 /**
- * function to get metadata of base compenduim
+ * function to get metadata of base compendium
  * @param {object} passon - new compendium id and data of origin compendia
  */
  function getMetadata (passon) {
@@ -265,8 +259,8 @@ function copyOverlayFiles(passon) {
                             fse.copySync(overlayfile, newoverlayfilepath);
                             substFiles[i].filename = newoverlayfilename;
                         } else {
-                            let newoverlayfilepath = path.join(passon.substitutedPath, overlayFilePath);
-                            fse.copySync(overlayfile, newoverlayfilepath);
+                            let newOverlayFilePath = path.join(passon.substitutedPath, overlayFilePath);
+                            fse.copySync(overlayFile, newOverlayFilePath);
                             substFiles[i].overlay = overlayFilePath;
                         }
                     } catch(err) {
@@ -385,15 +379,14 @@ function saveToDB(passon) {
   * @param {object} passon - compendium id and data of compendia
   */
  function cleanup(passon) {
-    debug('[%s] Starting cleanup ...', passon.id);
+    debug('[%s] Cleaning up ...', passon.id);
     try {
         debug('[%s] Cleanup running ...', passon.id);
         let cleanupPath = passon.substitutedPath;
         fse.removeSync(cleanupPath);
         debug('[%s] Finished cleanup.', passon.id);
       } catch (err) {
-        debug(err);
-        debug('Cleanup not successfull.');
+        debug('[%s] Cleanup not successful: %s', passon.id, err);
       }
  };
 

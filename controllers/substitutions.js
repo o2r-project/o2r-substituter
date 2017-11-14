@@ -29,10 +29,10 @@ exports.view = (req, res) => {
   var start = parseInt(req.query.start || 1, 10) - 1;
 
   if (req.query.base != null) {
-      filter[config.meta.base] = req.query.base;
+    filter[config.meta.base] = req.query.base;
   }
   if (req.query.overlay != null) {
-      filter[config.meta.overlay] = req.query.overlay;
+    filter[config.meta.overlay] = req.query.overlay;
   }
 
   Compendium.find(filter).select('id').skip(start).limit(limit).exec((err, comps) => {
@@ -41,16 +41,15 @@ exports.view = (req, res) => {
     } else {
       var count = comps.length;
       if (count <= 0) {
-        debug('No compendium found.');
-        res.status(404).send({ error: 'no compendium found' });
+        debug('No substitution found.');
       } else {
         debug('Found %s results', count);
-
-        answer.results = comps.map(comp => {
-          return comp.id;
-        });
-        res.status(200).send(answer);
       }
+      
+      answer.results = comps.map(comp => {
+        return comp.id;
+      });
+      res.status(200).send(answer);
     }
   });
 };
