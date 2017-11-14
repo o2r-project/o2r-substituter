@@ -118,11 +118,11 @@ function initApp(callback) {
     app.post('/api/v1/substitution', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       if (!req.isAuthenticated()) {
-        res.status(401).send('{"error":"not authenticated"}');
+        res.status(401).send({"error":"not authenticated"});
         return;
       }
       if (req.user.level < config.user.level.substitute) {
-        res.status(401).send('{"error":"not allowed"}');
+        res.status(401).send({"error":"not allowed"});
         return;
       }
 
@@ -138,14 +138,14 @@ function initApp(callback) {
         }
       };
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
-      return controllers.substitute.getMetadata(passon)   // get metadata
-        .then(controllers.substitute.checkOverlayId)      // check ERC id of overlay ERC
-        .then(controllers.substitute.createFolder)         // create folder with id
-        .then(controllers.substitute.copyBaseFiles)       // copy base files into folder
-        .then(controllers.substitute.copyOverlayFiles)    // copy overlay files into folder
-        .then(controllers.substitute.createVolumeBinds)  // create metadata for writing to yaml
-        .then(controllers.substitute.writeYaml)             // write docker run cmd to erc.yml
-        .then(controllers.substitute.saveToDB)             // save to DB
+      return controllers.substitute.getMetadata(passon)             // get metadata
+        .then(controllers.substitute.checkOverlayId)                // check ERC id of overlay ERC
+        .then(controllers.substitute.createFolder)                  // create folder with id
+        .then(controllers.substitute.copyBaseFiles)                 // copy base files into folder
+        .then(controllers.substitute.copyOverlayFiles)              // copy overlay files into folder
+        .then(controllers.substitute.createVolumeBinds)             // create metadata for writing to yaml
+        .then(controllers.substitute.updateCompendiumConfiguration) // write docker run cmd to erc.yml
+        .then(controllers.substitute.saveToDB)                      // save to DB
         .then((passon) => {
           debug('[%s] Finished substitution of new compendium.', passon.id);
           res.status(200).send({ 'id': passon.id });

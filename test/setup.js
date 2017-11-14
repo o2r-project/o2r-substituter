@@ -16,8 +16,9 @@
  */
 
 /* eslint-env mocha */
-var mongojs = require('mongojs');
+const mongojs = require('mongojs');
 const config = require('../config/config');
+const sleep = require('sleep');
 
 // test parameters for local session authentication directly via fixed database entries
 var orcid_o2r = '0000-0001-6021-1617';
@@ -29,42 +30,30 @@ global.test_host_read = env.TEST_HOST_READ || 'http://localhost:8080';
 global.test_host_upload = env.TEST_HOST_UPLOAD || 'http://localhost:8088';
 console.log('Testing endpoint at ' + global.test_host + ' using ' + global.test_host_read + ' for reading and ' + global.test_host_upload + ' for uploading');
 
+var dbPath = 'localhost/' + config.mongo.database;
+var db = mongojs(dbPath, ['users', 'sessions', 'compendia']);
+
 before(function () {
-    let dbpath = 'localhost/' + config.mongo.database;
-    var db = mongojs(dbpath, ['users', 'sessions', 'compendia']);
 
-    db.sessions.drop(function (err, doc) {
-        //
-    });
+    db.compendia.drop(function (err, doc) {
+        // 
 
-    var session_o2r = {
-        '_id': sessionId_o2r,
-        'session': {
-            'cookie': {
-                'originalMaxAge': null,
-                'expires': null,
-                'secure': null,
-                'httpOnly': true,
-                'domain': null,
-                'path': '/'
-            },
-            'passport': {
-                'user': orcid_o2r
-            }
-        }
-    }
-    db.sessions.save(session_o2r, function (err, doc) {
-        if (err) throw err;
-    });
-    var o2ruser = {
-        '_id': '57dc171b8760d15dc1864044',
-        'orcid': orcid_o2r,
-        'level': 100,
-        'name': 'o2r-testuser'
-    };
-    db.users.save(o2ruser, function (err, doc) {
-        if (err) throw err;
-    });
+        var o2ruser = {
+            '_id': '57dc171b8760d15dc1864044',
+            'orcid': orcid_o2r,
+            'level': 100,
+            'name': 'o2r-testuser'
+        };
+        db.users.save(o2ruser, function (err, doc) {
+            if (err) throw err;
 
-    console.log('Global setup completed for database ' + dbpath);
+            sleep.sleep(1);
+            console.log('Global setup completed for database ' + dbPath);
+        });
+    });
+});
+
+
+after(function () {
+    db.close();
 });

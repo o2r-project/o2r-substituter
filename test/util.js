@@ -48,7 +48,7 @@ function uploadCompendium(path, cookie) {
     method: 'POST',
     jar: j,
     formData: formData,
-    timeout: 10000
+    timeout: 20000
   };
 
   return (reqParams);
@@ -76,7 +76,7 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
     method: 'POST',
     jar: j,
     json: substitutionObject,
-    timeout: 10000
+    timeout: 20000
   };
 
   return (reqParams);
@@ -91,15 +91,14 @@ publishCandidate = function (compendium_id, cookie, done) {
   let getMetadata = {
     uri: global.test_host_read + '/api/v1/compendium/' + compendium_id,
     method: 'GET',
-    jar: j,
-    timeout: 10000
+    jar: j
   };
 
   let updateMetadata = {
     uri: global.test_host_read + '/api/v1/compendium/' + compendium_id + '/metadata',
     method: 'PUT',
     jar: j,
-    timeout: 10000
+    timeout: 20000
   };
 
   request(getMetadata, (err, res, body) => {
