@@ -161,7 +161,7 @@ function initApp(callback) {
           if (err.msg) {
             msg = err.msg;
           }
-          res.status(status).send({ err: msg });
+          res.status(status).send({ error: msg });
         });
     });
 
