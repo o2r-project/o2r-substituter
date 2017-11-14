@@ -22,37 +22,36 @@ const fs = require('fs');
 const config = require('../config/config')
 const path = require('path');
 
-function uploadCompendium(path, cookie) {
-  var zip = new AdmZip();
-  zip.addLocalFolder(path);
-  var tmpfile = tmp.tmpNameSync() + '.zip';
-  //var zipBuffer = zip.toBuffer(); could not make buffer work with multipart/form
-  zip.writeZip(tmpfile);
+function uploadCompendium(path, cookie, type = 'compendium') {
+    var zip = new AdmZip();
+    zip.addLocalFolder(path);
+    var tmpfile = tmp.tmpNameSync() + '.zip';
+    zip.writeZip(tmpfile);
 
-  let formData = {
-    'content_type': 'compendium',
-    'compendium': {
-      value: fs.createReadStream(tmpfile),
-      options: {
-        filename: 'another.zip',
-        contentType: 'application/zip'
+    let formData = {
+      'content_type': type,
+      'compendium': {
+        value: fs.createReadStream(tmpfile),
+        options: {
+          filename: 'another.zip',
+          contentType: 'application/zip'
+        }
       }
-    }
-  };
-  let j = request.jar();
-  let ck = request.cookie('connect.sid=' + cookie);
-  j.setCookie(ck, global.test_host);
+    };
+    let j = request.jar();
+    let ck = request.cookie('connect.sid=' + cookie);
+    j.setCookie(ck, global.test_host_upload);
 
-  let reqParams = {
-    uri: global.test_host_upload + '/api/v1/compendium',
-    method: 'POST',
-    jar: j,
-    formData: formData,
-    timeout: 20000
-  };
+    let reqParams = {
+      uri: global.test_host_upload + '/api/v1/compendium',
+      method: 'POST',
+      jar: j,
+      formData: formData,
+      timeout: 10000
+    };
 
-  return (reqParams);
-};
+    return (reqParams);
+}
 
 function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie) {
 
