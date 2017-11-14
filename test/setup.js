@@ -34,6 +34,7 @@ var dbPath = 'localhost/' + config.mongo.database;
 var db = mongojs(dbPath, ['users', 'sessions', 'compendia']);
 
 before(function (done) {
+    this.timeout(10000);
 
     db.compendia.drop(function (err, doc) {
         //
