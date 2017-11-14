@@ -47,7 +47,7 @@ describe('Empty service without substitutions', function () {
     });
 });
 
-describe.only('List substitutions', function () {
+describe('List substitutions', function () {
     var substitution_id;
 
     before(function (done) {
@@ -57,8 +57,8 @@ describe.only('List substitutions', function () {
         let req_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r); // or './test/erc/overlay01'
         var base_id;
         var overlay_id;
-        let base_file = "BerlinMit.csv";
-        let overlay_file = "BerlinOhne.csv";
+        let base_file = "data/BerlinMit.csv";
+        let overlay_file = "data/BerlinOhne.csv";
 
         // first upload
         request(req_base02, (err, res, body) => {
@@ -215,7 +215,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestReadingTimeout);
 
-        it('should respond with metadata for base and overlay filenames', (done) => {
+        it('should respond with metadata for base and overlay filenames, and new filename at root directory', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
@@ -223,9 +223,9 @@ describe('Simple substitution of data', function () {
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 1);
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
-                assert.notProperty(response.metadata.substitution.substitutionFiles[0], 'filename');
-                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', "BerlinMit.csv"); //neu: BerlinMit.csv    alt: data(BerlinMit.csv)
-                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', "BerlinOhne.csv"); // neu: BerlinOhne
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "BerlinOhne.csv");
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', "data/BerlinMit.csv");
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', "data/BerlinOhne.csv");
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -286,7 +286,7 @@ describe('Simple substitution of data', function () {
             });
         }).timeout(requestReadingTimeout);
 
-        // TODO: this is for testing inline code, if substitution was successfull with the right file
+        // TODO: this is for testing inline code, if substitution was successful with the right file
         it.skip('should respond with correct integer of mounted overlay dataset', (done) => {
             // should not be: base02 -> "mitBerlin": Gesamtbilanz = 55.1, Jahr = 2014
             // should be:  overlay02 -> "ohneBerlin": Gesamtbilanz = 1051.2, Jahr = 1990
@@ -385,7 +385,7 @@ describe('Simple substitution of data', function () {
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'filename');
-                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', "main.Rmd");  // alt: "data/..."
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', "data/main.Rmd");  // alt: "data/..."
                 assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', "data/main.Rmd");  // this is not touched, if "substitutionFiles[i].filename" exists
                 assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "overlay_main.Rmd");  //alt: "data/..."
                 done();
