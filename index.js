@@ -118,11 +118,11 @@ function initApp(callback) {
     app.post('/api/v1/substitution', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       if (!req.isAuthenticated()) {
-        res.status(401).send('{"error":"not authenticated"}');
+        res.status(401).send({"error":"not authenticated"});
         return;
       }
       if (req.user.level < config.user.level.substitute) {
-        res.status(401).send('{"error":"not allowed"}');
+        res.status(401).send({"error":"not allowed"});
         return;
       }
 
