@@ -33,7 +33,7 @@ console.log('Testing endpoint at ' + global.test_host + ' using ' + global.test_
 var dbPath = 'localhost/' + config.mongo.database;
 var db = mongojs(dbPath, ['users', 'sessions', 'compendia']);
 
-before(function () {
+before(function (done) {
 
     db.compendia.drop(function (err, doc) {
         //
@@ -55,6 +55,7 @@ before(function () {
 });
 
 
-after(function () {
+after(function (done) {
     db.close();
+    done();
 });
