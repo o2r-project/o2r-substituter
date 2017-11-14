@@ -37,21 +37,21 @@ before(function () {
 
     db.compendia.drop(function (err, doc) {
         // 
+
+        var o2ruser = {
+            '_id': '57dc171b8760d15dc1864044',
+            'orcid': orcid_o2r,
+            'level': 100,
+            'name': 'o2r-testuser'
+        };
+        db.users.save(o2ruser, function (err, doc) {
+            if (err) throw err;
+
+            sleep.sleep(1);
+            console.log('Global setup completed for database ' + dbPath);
+            done();
+        });
     });
-
-    var o2ruser = {
-        '_id': '57dc171b8760d15dc1864044',
-        'orcid': orcid_o2r,
-        'level': 100,
-        'name': 'o2r-testuser'
-    };
-    db.users.save(o2ruser, function (err, doc) {
-        if (err) throw err;
-
-    });
-
-    sleep.sleep(2);
-    console.log('Global setup completed for database ' + dbPath);
 });
 
 
