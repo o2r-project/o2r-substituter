@@ -119,10 +119,8 @@ function createFolder(passon) {
             fse.mkdirsSync(outputPath);
             debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
             passon.substitutedPath = outputPath;
-            var basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
-            var overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
-            passon.basePath = basePath;
-            passon.overlayPath = overlayPath;
+            passon.basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
+            passon.overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
             debug("[%s] basePath: [%s], overlayPath: [%s], substitutedPath: [%s]", passon.id, passon.basePath, passon.overlayPath, passon.substitutedPath);
             fulfill(passon);
         } catch (err) {
@@ -140,12 +138,8 @@ function copyBaseFiles(passon) {
     debug('[%s] Copying base files ...', passon.id);
     return new Promise((fulfill, reject) => {
         let substFiles = passon.metadata.substitution.substitutionFiles;
-        // check if compendium is a bag
-        let basePath = passon.basePath;
-        if (passon.bag) {
-          basePath = path.join(passon.basePath, 'data');
-        }
-        // check if aray substitutionFiles exists and has data
+
+        // check if array substitutionFiles exists and has data
         if (Array.isArray(substFiles) && Number.isInteger(substFiles.length) && substFiles.length > 0) {
             for (var i = 0; i <= substFiles.length; i++) {
                 if (i == substFiles.length) {
