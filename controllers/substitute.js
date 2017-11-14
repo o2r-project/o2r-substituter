@@ -25,7 +25,7 @@ const Stream = require('stream');
 const clone = require('clone');
 const fse = require('fs-extra');
 const yaml = require('js-yaml');
-const writeyaml = require('write-yaml');
+const writeYaml = require('write-yaml');
 
 var Compendium = require('../lib/model/compendium');
 
@@ -394,7 +394,7 @@ function saveToDB(passon) {
   * function to read erc.yml and overwrite with execution command for "docker run"
   * @param {object} passon - compendium id and data of compendia
   */
- function writeYaml(passon) {
+function updateCompendiumConfiguration(passon) {
    return new Promise((fulfill, reject) => {
       debug('[%s] Starting write yaml ...', passon.id);
       let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
@@ -413,7 +413,7 @@ function saveToDB(passon) {
           }
           doc.execution.cmd = "'" + dockerCmd + " " + passon.imageTag + "'";
           debug('[%s] New erc.yml file: \n %s', passon.id, yaml.dump(doc));
-          writeyaml.sync(yamlPath, doc, function(err) {
+                writeYaml.sync(yamlPath, doc, function (err) {
               debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
               cleanup(passon);
               reject("Error writing erc.yml in: %s", yamlPath);
