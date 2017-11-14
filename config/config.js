@@ -46,6 +46,11 @@ c.meta.substituted = 'metadata.substituted';
 c.meta.base = 'metadata.substitution.base';
 c.meta.overlay = 'metadata.substitution.overlay';
 
+// metadata schema for saving
+c.meta.bag = false;
+c.meta.candidate = false;
+c.meta.compendium = true;
+
 // docker commands
 c.docker = {};
 c.docker.cmd = 'docker run -it --rm';
