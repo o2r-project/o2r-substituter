@@ -26,7 +26,7 @@ before_script:
   - docker run --name testsubstituter -d -p 8090:8090 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -e SUBSTITUTER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* substituter:latest
   - sleep 10
 script:
-  - SUBSTITUTER_BASEPATH=$HOME/ npm test
+  - SUBSTITUTER_BASEPATH=/tmp/o2r npm test
 after_failure:
   - sleep 5
   - docker logs mongodb
