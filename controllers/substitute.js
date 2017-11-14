@@ -37,14 +37,15 @@ function getMetadata(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] Requesting metadata of base compendium with id - %s ...', passon.id, passon.metadata.substitution.base);
         try {
-            Compendium.findOne({ id: passon.metadata.substitution.base}, function (err, res) {
+            Compendium.findOne({ id: passon.metadata.substitution.base })
+                .select('id metadata bag').exec((err, compendium) => {
                 if (err) {
                     debug('[%s] Error requesting metadata of base compendium.', passon.id);
                     err.status = 400;
                     err.msg = 'base ID is invalid';
                     reject(err);
                 } else {
-                    if (!res || res == null) {
+                        if (!compendium || compendium == null) {
                       debug('[%s] Error requesting metadata of base compendium.', passon.id);
                       let err = new Error();
                       err.status = 400;
@@ -52,8 +53,8 @@ function getMetadata(passon) {
                       reject(err);
                     } else {
                       debug('[%s] Requesting metadata of base compendium with id - %s - successful.', passon.id, passon.metadata.substitution.base);
-                      passon.baseMetaData = res.metadata;
-                      passon.bag = res.bag;
+                            passon.baseMetaData = compendium.metadata;
+                            passon.bag = compendium.bag;
                       fulfill(passon);
                     }
                 }
@@ -75,23 +76,24 @@ function checkOverlayId(passon) {
      return new Promise((fulfill, reject) => {
         debug('[%s] Checking overlay compendium with id - %s ...', passon.id, passon.metadata.substitution.overlay);
          try {
-             Compendium.findOne({ id: passon.metadata.substitution.overlay}, function (err, res) {
+            Compendium.findOne({ id: passon.metadata.substitution.overlay })
+                .select('id bag').exec((err, compendium) => {
                  if (err) {
                      debug('[%s] Error checking id of overlay Compendium.', passon.id);
                      err.status = 400;
                      err.msg = 'overlay ID is invalid';
                      reject(err);
                  } else {
-                     if (!res || res == null) {
-                       debug('[%s] Error checking id of overlay Compendium.', passon.id);
+                        if (!compendium || compendium == null) {
+                            debug('[%s] Error getting overlay compendium with id %s', passon.id, passon.metadata.substitution.overlay);
                        let err = new Error();
                        err.status = 400;
                        err.msg = 'overlay ID is invalid';
                        reject(err);
                      } else {
-                       debug('[%s] Checking metadata of overlay compendium with id - %s - successfull.', passon.id, passon.metadata.substitution.overlay);
+                            debug('[%s] Checking metadata of overlay compendium with id - %s - successful.', passon.id, passon.metadata.substitution.overlay);
                        passon.overlay = {};
-                       passon.overlay.bag = res.bag;
+                            passon.overlay.bag = compendium.bag;
                        fulfill(passon);
                      }
                  }
