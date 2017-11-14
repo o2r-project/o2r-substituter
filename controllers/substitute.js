@@ -238,12 +238,12 @@ function copyOverlayFiles(passon) {
 
                     try {
                         if (fse.existsSync(overlayFileDestination)) {
-                            prefixedFileName = config.substitutionFilePrepend + overlayFileDestination;
-                            prefixedOverlayFileDestination = path.join(passon.overlayPath, prefixedFileName);
+                            prefixedFileName = config.substitutionFilePrepend + path.basename(overlayFileDestination);
+                            prefixedOverlayFileDestination = path.join(passon.substitutedPath, prefixedFileName);
 
                             // add prefix until the destination file name does not exist
                             while (fse.existsSync(prefixedOverlayFileDestination)) {
-                                prefixedFileName = path.join(config.substitutionFilePrepend, prefixedFileName);
+                                prefixedFileName = config.substitutionFilePrepend + prefixedFileName;
                                 prefixedOverlayFileDestination = path.join(passon.substitutedPath, prefixedFileName);
                             }
                             fse.copySync(overlayFileSource, prefixedOverlayFileDestination);
@@ -339,10 +339,11 @@ function createVolumeBinds(passon) {
                     baseFileName = baseFileName.substring(splitCompBag);
                 }
 
-                let bind = path.join(passon.substitutedPath, substFiles[i].overlay) + ":" + path.join("/erc", baseFileName) + ":ro";
-                if (filenameNotExists(substFiles[i].filename) == false) {
-                    bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc", baseFileName) + ":ro";
+                if (filenameNotExists(substFiles[i].filename)) {
+                  reject(new Error('substitution filename has not been passed correctly.'));
                 }
+
+                let bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc", baseFileName) + ":ro";
                 let cmdBind = "-v " + bind;
                 cmdBinds.push(cmdBind);
             }
@@ -446,5 +447,5 @@ module.exports = {
     saveToDB: saveToDB,
     createVolumeBinds: createVolumeBinds,
     cleanup: cleanup,
-    writeYaml: writeYaml
+    updateCompendiumConfiguration: updateCompendiumConfiguration
 };

@@ -1,8 +1,0 @@
-57740374df23c841d3284b77ad1e59dc  data/BerlinOhne.csv
-c161031ae2b8ae1df75b99612b7dd99a  data/Dockerfile
-194acd63f70434b81814089d178d433b  data/erc.yml
-be99da32d671a4020b24ac956412a388  data/main.Rmd
-cbe425bd9571662253efc4f61eedeb91  data/.erc/erc_spec.zip
-0260ab493861570f8194751bae637c06  data/.erc/meta_2017081012062481_main_Rmd_.json
-53008acb8e7f9216e97750d60b97a379  data/.erc/metadata_raw.json
-b223f0e7487031ca875f81d44172b83e  data/.erc/metadata_zenodo.json
