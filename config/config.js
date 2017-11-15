@@ -27,9 +27,9 @@ c.api_version = 1;
 c.net.port = env.SUBSTITUTER_PORT || 8090;
 c.mongo.location = env.SUBSTITUTER_MONGODB || 'mongodb://localhost/';
 c.mongo.database = env.SUBSTITUTER_MONGODB_DATABASE || 'muncher';
-c.mongo.inital_connection_attempts = 30;
-c.mongo.inital_connection_max_delay = 5000;
-c.mongo.inital_connection_initial_delay = 1000;
+c.mongo.initial_connection_attempts = 30;
+c.mongo.initial_connection_max_delay = 5000;
+c.mongo.initial_connection_initial_delay = 1000;
 
 // fix mongo location if trailing slash was omitted
 if (c.mongo.location[c.mongo.location.length-1] !== '/') {
@@ -37,7 +37,7 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 }
 
 // fs paths
-c.fs.base       = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/'; // '/tmp/o2r-dev/';
+c.fs.base = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/'; // '/tmp/o2r-dev/';
 c.fs.compendium = c.fs.base + 'compendium/';
 
 // metadata extraction and brokering options
