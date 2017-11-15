@@ -67,14 +67,16 @@ describe('List substitutions', function () {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            publishCandidate(base_id, cookie_o2r, () => {
+            publishCandidate(base_id, cookie_o2r, (err) => {
+                assert.ifError(err);
 
                 // second upload
                 request(req_erc_overlay02, (err, res, body) => {
                     assert.ifError(err);
                     overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, () => {
+                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
 
                         // substitution
                         let req_substitution = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
@@ -124,21 +126,23 @@ describe('Simple substitution of data with two ERCs', function () {
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/erc/base02', cookie_o2r);
         let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
-        this.timeout(40000);
+        this.timeout(60000);
 
         // first upload
         request(req_erc_base02, (err, res, body) => {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            publishCandidate(base_id, cookie_o2r, () => {
+            publishCandidate(base_id, cookie_o2r, (err) => {
+                assert.ifError(err);
 
                 // second upload
                 request(req_erc_overlay02, (err, res, body) => {
                     assert.ifError(err);
                     overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, () => {
+                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -178,7 +182,7 @@ describe('Simple substitution of data with two ERCs', function () {
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with valid ID', (done) => {
+        it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
@@ -188,7 +192,8 @@ describe('Simple substitution of data with two ERCs', function () {
                     assert.isString(body.id);
                     substituted_id = body.id;
 
-                    publishCandidate(substituted_id, cookie_o2r, () => {
+                    publishCandidate(substituted_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -247,7 +252,8 @@ describe('Simple substitution of data with two ERCs', function () {
                     assert.isString(body.id);
                     substituted_id_moreOverlays = body.id;
 
-                    publishCandidate(substituted_id_moreOverlays, cookie_o2r, () => {
+                    publishCandidate(substituted_id_moreOverlays, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
                             assert.ifError(err);
                             let response = JSON.parse(body);
@@ -350,7 +356,8 @@ describe('Simple substitution of data with two ERCs', function () {
                     assert.isString(body.id);
                     substituted_id = body.id;
 
-                    publishCandidate(substituted_id, cookie_o2r, () => {
+                    publishCandidate(substituted_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -612,21 +619,23 @@ describe('Simple substitution of data with one ERC (as base) and one WORKSPACE (
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/erc/base02', cookie_o2r);
         let req_workspace_overlay01 = uploadCompendium('./test/workspace/overlay01', cookie_o2r, 'workspace');
-        this.timeout(40000);
+        this.timeout(60000);
 
         // first upload
         request(req_erc_base02, (err, res, body) => {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            publishCandidate(base_id, cookie_o2r, () => {
+            publishCandidate(base_id, cookie_o2r, (err) => {
+                assert.ifError(err);
 
                 // second upload
                 request(req_workspace_overlay01, (err, res, body) => {
                     assert.ifError(err);
                     overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, () => {
+                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -647,24 +656,13 @@ describe('Simple substitution of data with one ERC (as base) and one WORKSPACE (
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 200);
+                    assert.isObject(body);
                     done();
                 });
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with valid JSON', (done) => {
-
-            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
-
-                request(req, (err, res, body) => {
-                    assert.ifError(err);
-                    done();
-                });
-            });
-        }).timeout(requestLoadingTimeout);
-
-        it('should respond with valid ID', (done) => {
+        it('should respond with valid ID (and now publish it)', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
@@ -674,7 +672,8 @@ describe('Simple substitution of data with one ERC (as base) and one WORKSPACE (
                     assert.isString(body.id);
                     substituted_id = body.id;
 
-                    publishCandidate(substituted_id, cookie_o2r, () => {
+                    publishCandidate(substituted_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -740,9 +739,9 @@ describe('Simple substitution of data with one ERC (as base) and one WORKSPACE (
                 assert.ifError(err);
                 let response = JSON.parse(body);
                 let basefilePath = path.join(config.fs.compendium, substituted_id, "BerlinMit.csv");
-                let overlayfilePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename);
+                let overlayFilePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename);
                 assert.equal(fse.existsSync(basefilePath), true, 'base file should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(overlayfilePath), true, 'overlay file should exist in folder of substituted ERC');
+                assert.equal(fse.existsSync(overlayFilePath), true, 'overlay file should exist in folder of substituted ERC');
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -758,21 +757,23 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
         let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
-        this.timeout(40000);
+        this.timeout(60000);
 
         // first upload
         request(req_workspace_base01, (err, res, body) => {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            publishCandidate(base_id, cookie_o2r, () => {
+            publishCandidate(base_id, cookie_o2r, (err) => {
+                assert.ifError(err);
 
                 // second upload
                 request(req_erc_overlay02, (err, res, body) => {
                     assert.ifError(err);
                     overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, () => {
+                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -805,6 +806,7 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
+                    assert.isObject(body);
                     done();
                 });
             });
@@ -820,7 +822,8 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
                     assert.isString(body.id);
                     substituted_id = body.id;
 
-                    publishCandidate(substituted_id, cookie_o2r, () => {
+                    publishCandidate(substituted_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -904,21 +907,23 @@ describe('Simple substitution of data with two WORKSPACEs', function () {
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
         let req_workspace_overlay03 = uploadCompendium('./test/workspace/overlay03', cookie_o2r, 'workspace');
-        this.timeout(40000);
+        this.timeout(60000);
 
         // first upload
         request(req_workspace_base01, (err, res, body) => {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            publishCandidate(base_id, cookie_o2r, () => {
+            publishCandidate(base_id, cookie_o2r, (err) => {
+                assert.ifError(err);
 
                 // second upload
                 request(req_workspace_overlay03, (err, res, body) => {
                     assert.ifError(err);
                     overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, () => {
+                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -940,24 +945,13 @@ describe('Simple substitution of data with two WORKSPACEs', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 200);
+                    assert.isObject(body);
                     done();
                 });
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with valid JSON', (done) => {
-
-            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
-
-                request(req, (err, res, body) => {
-                    assert.ifError(err);
-                    done();
-                });
-            });
-        }).timeout(requestLoadingTimeout);
-
-        it('should respond with valid ID', (done) => {
+        it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie_o2r);
 
@@ -967,7 +961,8 @@ describe('Simple substitution of data with two WORKSPACEs', function () {
                     assert.isString(body.id);
                     substituted_id = body.id;
 
-                    publishCandidate(substituted_id, cookie_o2r, () => {
+                    publishCandidate(substituted_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -1053,7 +1048,8 @@ describe('Simple substitution of data with two WORKSPACEs', function () {
                     assert.isString(body.id);
                     substituted_id_moreOverlays = body.id;
 
-                    publishCandidate(substituted_id_moreOverlays, cookie_o2r, () => {
+                    publishCandidate(substituted_id_moreOverlays, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
                             assert.ifError(err);
                             let response = JSON.parse(body);
@@ -1107,21 +1103,23 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
     before(function (done) {
         let req_workspace_base02 = uploadCompendium('./test/workspace/base02', cookie_o2r, 'workspace');
         let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
-        this.timeout(40000);
+        this.timeout(60000);
 
         // first upload
         request(req_workspace_base02, (err, res, body) => {
             assert.ifError(err);
             base_id = JSON.parse(body).id;
 
-            publishCandidate(base_id, cookie_o2r, () => {
+            publishCandidate(base_id, cookie_o2r, (err) => {
+                assert.ifError(err);
 
                 // second upload
                 request(req_erc_overlay02, (err, res, body) => {
                     assert.ifError(err);
                     overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, () => {
+                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                        assert.ifError(err);
                         done();
                     });
                 });
@@ -1155,7 +1153,7 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    assert.include(body, { error: 'missing configuration file in base compendium, please execute a job for the base compedium first'});
+                    assert.include(body, { error: 'missing configuration file in base compendium, please execute a job for the base compedium first' });
                     done();
                 });
             });

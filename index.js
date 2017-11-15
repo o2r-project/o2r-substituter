@@ -187,11 +187,11 @@ function initApp(callback) {
 
 var dbBackoff = backoff.fibonacci({
   randomisationFactor: 0,
-  initialDelay: config.mongo.inital_connection_initial_delay,
-  maxDelay: config.mongo.inital_connection_max_delay
+  initialDelay: config.mongo.initial_connection_initial_delay,
+  maxDelay: config.mongo.initial_connection_max_delay
 });
 
-dbBackoff.failAfter(config.mongo.inital_connection_attempts);
+dbBackoff.failAfter(config.mongo.initial_connection_attempts);
 dbBackoff.on('backoff', function (number, delay) {
   debug('Trying to connect to MongoDB (#%s) in %sms', number, delay);
 });

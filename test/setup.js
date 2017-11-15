@@ -18,45 +18,71 @@
 /* eslint-env mocha */
 const mongojs = require('mongojs');
 const config = require('../config/config');
-const sleep = require('sleep');
+const debug = require('debug')('test:setup');
 
 // test parameters for local session authentication directly via fixed database entries
 var orcid_o2r = '0000-0001-6021-1617';
-var sessionId_o2r = 'C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo';
 
 var env = process.env;
+global.test_db = env.TEST_DB || 'localhost:27017/' + config.mongo.database;
 global.test_host = env.TEST_HOST || 'http://localhost:' + config.net.port;
 global.test_host_read = env.TEST_HOST_READ || 'http://localhost:8080';
 global.test_host_upload = env.TEST_HOST_UPLOAD || 'http://localhost:8088';
-console.log('Testing endpoint at ' + global.test_host + ' using ' + global.test_host_read + ' for reading and ' + global.test_host_upload + ' for uploading');
+debug('Testing endpoint at %s using %s for reading and %s for uploading', global.test_host, global.test_host_read, global.test_host_upload);
 
-var dbPath = 'localhost/' + config.mongo.database;
-var db = mongojs(dbPath, ['users', 'sessions', 'compendia']);
+var db = null;
 
 before(function (done) {
     this.timeout(10000);
 
+    debug('Connecting to DB at %s', global.test_db);
+    db = mongojs(global.test_db, ['sessions', 'compendia']);
+
     db.compendia.drop(function (err, doc) {
-        //
-    });
+        debug('Dropped compendia collection: %s | %s', err, doc);
 
-    var o2ruser = {
-        '_id': '57dc171b8760d15dc1864044',
-        'orcid': orcid_o2r,
-        'level': 100,
-        'name': 'o2r-testuser'
-    };
-    db.users.save(o2ruser, function (err, doc) {
-        if (err) throw err;
-    });
+        var session_o2r = {
+            '_id': 'C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo',
+            'session': {
+                'cookie': {
+                    'originalMaxAge': null,
+                    'expires': null,
+                    'secure': null,
+                    'httpOnly': true,
+                    'domain': null,
+                    'path': '/'
+                },
+                'passport': {
+                    'user': orcid_o2r
+                }
+            }
+        }
+        db.sessions.save(session_o2r, function (err, doc_session) {
+            if (err) throw err;
 
-    sleep.sleep(2);
-    console.log('Global setup completed for database ' + dbPath);
-    done();
+            db.users.save({
+                '_id': '57dc171b8760d15dc1864044',
+                'orcid': orcid_o2r,
+                'level': 100,
+                'name': 'o2r-testuser'
+            }, function (err, doc_user) {
+                if (err) throw err;
+
+                debug('Added session and test user: %s | %s', JSON.stringify(doc_session), JSON.stringify(doc_user));
+
+                debug('Global setup completed for database %s', global.test_db);
+                done();
+            });
+
+        });
+    });
 });
 
 
 after(function (done) {
-    db.close();
+    if (db) {
+        db.close();
+        debug('Database connection closed.');
+    }
     done();
 });

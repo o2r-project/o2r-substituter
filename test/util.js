@@ -103,6 +103,7 @@ publishCandidate = function (compendium_id, cookie, done) {
   request(getMetadata, (err, res, body) => {
     if (err || body.error) {
       console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
+      done(err || body.error);
     } else {
       let response = JSON.parse(body);
       updateMetadata.json = { o2r: response.metadata.o2r };
@@ -110,6 +111,7 @@ publishCandidate = function (compendium_id, cookie, done) {
       request(updateMetadata, (err, res, body) => {
         if (err || body.error) {
           console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
+          done(err || body.error)
         } else {
           done();
         }
