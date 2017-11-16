@@ -14,7 +14,6 @@
 #
 FROM alpine:3.6
 
-# Add Alpine mirrors, replacing default repositories with edge ones, based on https://github.com/jfloff/alpine-python/blob/master/3.4/Dockerfile
 RUN echo \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
@@ -24,17 +23,17 @@ RUN echo \
 RUN apk add --no-cache \
     nodejs \
     dumb-init \
-    nodejs-npm \
   && rm -rf /var/cache
 
 # Install app
 WORKDIR /substituter
+COPY package.json package.json
+RUN npm install --production
+
 COPY config config
 COPY controllers controllers
 COPY lib lib
 COPY index.js index.js
-COPY package.json package.json
-RUN npm install --production
 
 # Metadata params provided with docker build command
 ARG VERSION=dev

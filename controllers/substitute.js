@@ -165,7 +165,6 @@ function copyBaseFiles(passon) {
                     try {
                         // check if base filename exists in substitutionFiles
                         if (filenameNotExists(substFiles[i].base)) {
-                            console.log("true");
                             debug('[%s] Error copying base files to directory of new compendium. - file:\n%s', passon.id, substFiles[i].base);
                             cleanup(passon);
                             let err = new Error();
