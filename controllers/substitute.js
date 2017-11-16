@@ -417,6 +417,7 @@ function updateCompendiumConfiguration(passon) {
             }
         } else {
             debug("[%s] missing configuration file (erc.yml) in base compendium, please execute a job for the base compedium first", passon.id);
+            cleanup(passon);
             var err = new Error();
             err.status = 400;
             err.msg = 'missing configuration file in base compendium, please execute a job for the base compedium first';
