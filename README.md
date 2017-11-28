@@ -41,11 +41,16 @@ npm test
 
 The file `Dockerfile` is the basis for the Docker image published at [Docker Hub](https://hub.docker.com/r/o2rproject/o2r-substituter/).
 
-To build and run locally use
+To build and run locally use the following commands to start other required microservices
 
 ```bash
 docker build --tag substituter .
-docker run -it -e DEBUG=* substituter
+
+docker run --name mongodb -d -p 27017:27017 mongo:3.4
+docker run --name testmuncher -d -p 8080:8080 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -v /var/run/docker.sock:/var/run/docker.sock -e MUNCHER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-muncher:latest
+docker run --name testloader  -d -p 8088:8088 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -v /var/run/docker.sock:/var/run/docker.sock -e LOADER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* loader
+
+docker run --name testsubstituter -it -p 8090:8090 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -e SUBSTITUTER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* substituter
 ```
 
 ## License
