@@ -145,6 +145,7 @@ function initApp(callback) {
         .then(controllers.substitute.copyOverlayFiles)              // copy overlay files into folder
         .then(controllers.substitute.createVolumeBinds)             // create metadata for writing to yaml
         .then(controllers.substitute.updateCompendiumConfiguration) // write docker run cmd to erc.yml
+        .then(controllers.substitute.updatePathMetadata)            // update metadata of substituted ERC
         .then(controllers.substitute.saveToDB)                      // save to DB
         .then((passon) => {
           debug('[%s] Finished substitution of new compendium.', passon.id);
