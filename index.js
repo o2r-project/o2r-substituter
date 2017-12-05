@@ -84,8 +84,8 @@ function initApp(callback) {
   debug('Initialize application');
 
   try {
-    // configure express-session, stores reference to authdetails in cookie.
-    // authdetails themselves are stored in MongoDBStore
+    // configure express-session, stores reference to auth details in cookie.
+    // auth details themselves are stored in MongoDBStore
     var mongoStore = new MongoDBStore({
       uri: dbURI,
       collection: 'sessions'
@@ -165,7 +165,7 @@ function initApp(callback) {
         });
     });
 
-    // GET list of subtsitution
+    // GET list of substitution
     app.get('/api/v1/substitution', controllers.substitutions.view);
     // GET list of related substitutions by filter "base" and/or "overlay"
 
