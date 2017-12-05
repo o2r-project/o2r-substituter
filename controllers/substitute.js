@@ -298,7 +298,7 @@ function updatePathMetadata(passon) {
             passon.baseMetaData = updatedJSON;
             fulfill(passon);
         } catch (err) {
-            debug('[%s] Error updating path in metadata.', passon.id, JSON.stringify(err));
+            debug('[%s] Error updating path in metadata: %s', passon.id, JSON.stringify(err));
             cleanup(passon);
             reject(err);
         }
