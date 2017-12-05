@@ -286,6 +286,7 @@ function updatePathMetadata(passon) {
                 debug('[#%s] update path in metadata at [%s]', i+1, updatedJSON.metadata.o2r[pathsArray[i]]);
                 let stringified = JSON.stringify(updatedJSON.metadata.o2r[pathsArray[i]]);
                 if (passon.bag) { // delete "data/" if base ERC is a bag
+                    debug('[%s] Updating path in metadata - ERC is a bag');
                     if (stringified.indexOf('data/') >= 0) {
                         stringified = stringified.replace('data/', '');
                     }
@@ -298,7 +299,7 @@ function updatePathMetadata(passon) {
             passon.baseMetaData = updatedJSON;
             fulfill(passon);
         } catch (err) {
-            debug('[%s] Error updating path in metadata: %s', passon.id, JSON.stringify(err));
+            debug('[%s] Error updating path in metadata: %s', passon.id, err);
             cleanup(passon);
             reject(err);
         }
