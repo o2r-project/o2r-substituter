@@ -278,30 +278,33 @@ function copyOverlayFiles(passon) {
  */
 function updatePathMetadata(passon) {
     return new Promise((fulfill, reject) => {
-        debug('[%s] Starting update path in metadata ...', passon.id);
-        try {
-        let pathsArray = config.meta.updatePath;
-        let updatedJSON = passon.baseMetaData;
-            for (let i=0; i<pathsArray.length; i++) {
-                debug('[#%s] update path in metadata at [%s]', i+1, updatedJSON.metadata.o2r[pathsArray[i]]);
-                let stringified = JSON.stringify(updatedJSON.metadata.o2r[pathsArray[i]]);
-                if (passon.bag) { // delete "data/" if base ERC is a bag
-                    debug('[%s] Updating path in metadata - ERC is a bag');
-                    if (stringified.indexOf('data/') >= 0) {
+        debug('[%s] metadata handling is set to: %s', passon.id, passon.metadata.substitution.metadataHandling);
+        if (passon.metadata.substitution.metadataHandling == "keepBase") {
+            debug('[%s] Starting update path in metadata ...', passon.id);
+            try {
+                let pathsArray = config.meta.updatePath;
+                let updatedJSON = passon.baseMetaData;
+                for (let i=0; i<pathsArray.length; i++) {
+                  debug('[#%s] update path in metadata at [%s]', i+1, updatedJSON.o2r[pathsArray[i]]);
+                  let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
+                  if (passon.bag) { // delete "data/" if base ERC is a bag
+                      debug('[%s] Updating path in metadata - ERC is a bag');
+                      if (stringified.indexOf('data/') >= 0) {
                         stringified = stringified.replace('data/', '');
-                    }
+                      }
+                  }
+                  if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
+                      stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
+                  }
+                  updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
                 }
-                if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
-                    stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
-                }
-                updatedJSON.metadata.o2r[pathsArray[i]] = JSON.parse(stringified);
+                passon.baseMetaData = updatedJSON;
+                fulfill(passon);
+            } catch (err) {
+                debug('[%s] Error updating path in metadata: %s', passon.id, err);
+                cleanup(passon);
+                reject(err);
             }
-            passon.baseMetaData = updatedJSON;
-            fulfill(passon);
-        } catch (err) {
-            debug('[%s] Error updating path in metadata: %s', passon.id, err);
-            cleanup(passon);
-            reject(err);
         }
     })
 };

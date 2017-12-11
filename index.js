@@ -137,6 +137,7 @@ function initApp(callback) {
           substitution: req.body
         }
       };
+
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
       return controllers.substitute.getMetadata(passon)             // get metadata
         .then(controllers.substitute.checkOverlayId)                // check ERC id of overlay ERC

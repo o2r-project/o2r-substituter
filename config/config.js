@@ -42,7 +42,7 @@ c.fs.compendium = c.fs.base + 'compendium/';
 
 // metadata extraction and brokering options
 c.meta = {};
-c.meta.substituted = 'metadata.substituted';
+c.meta.substituted = 'substituted';
 c.meta.base = 'metadata.substitution.base';
 c.meta.overlay = 'metadata.substitution.overlay';
 
