@@ -53,7 +53,7 @@ function uploadCompendium(path, cookie, type = 'compendium') {
     return (reqParams);
 }
 
-function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, cookie) {
+function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie) {
 
   let substitutionObject = {
     base: base_id,
@@ -63,7 +63,8 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
         base: base_file,
         overlay: overlay_file
       }
-    ]
+    ],
+    metadataHandling: metadatahandling
   }
 
   let j = request.jar();

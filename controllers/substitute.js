@@ -273,6 +273,43 @@ function copyOverlayFiles(passon) {
 }
 
 /**
+ * function to update substituted ERC metadata that have been copied from base ERC
+ * @param {object} passon - compendium id and data of compendia
+ */
+function updatePathMetadata(passon) {
+    return new Promise((fulfill, reject) => {
+        debug('[%s] metadata handling is set to: %s', passon.id, passon.metadata.substitution.metadataHandling);
+        if (passon.metadata.substitution.metadataHandling == "keepBase") {
+            debug('[%s] Starting update path in metadata ...', passon.id);
+            try {
+                let pathsArray = config.meta.updatePath;
+                let updatedJSON = passon.baseMetaData;
+                for (let i=0; i<pathsArray.length; i++) {
+                  debug('[#%s] update path in metadata at [%s]', i+1, updatedJSON.o2r[pathsArray[i]]);
+                  let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
+                  if (passon.bag) { // delete "data/" if base ERC is a bag
+                      debug('[%s] Updating path in metadata - ERC is a bag');
+                      if (stringified.indexOf('data/') >= 0) {
+                        stringified = stringified.replace('data/', '');
+                      }
+                  }
+                  if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
+                      stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
+                  }
+                  updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
+                }
+                passon.baseMetaData = updatedJSON;
+                fulfill(passon);
+            } catch (err) {
+                debug('[%s] Error updating path in metadata: %s', passon.id, err);
+                cleanup(passon);
+                reject(err);
+            }
+        }
+    })
+};
+
+/**
  * function to save new compendium to mongodb
  * @param {object} passon - new compendium id and data of origin compendia
  */
@@ -280,16 +317,18 @@ function saveToDB(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] Saving new compendium ...', passon.id);
         var metadataToSave = {};
-        metadataToSave = passon.baseMetaData;
-        metadataToSave.substituted = passon.metadata.substituted;
-        metadataToSave.substitution = passon.metadata.substitution;
+        metadataToSave = passon.baseMetaData.o2r;
         var compendium = new Compendium({
             id: passon.id,
             user: passon.user,
-            metadata: metadataToSave,
+            metadata: {
+                substitution: passon.metadata.substitution,
+                o2r: metadataToSave
+            },
             bag: config.meta.bag,
             candidate: config.meta.candidate,
-            compendium: config.meta.compendium
+            compendium: config.meta.compendium,
+            substituted: passon.metadata.substituted
         });
 
         compendium.save(error => {
@@ -447,5 +486,6 @@ module.exports = {
     saveToDB: saveToDB,
     createVolumeBinds: createVolumeBinds,
     cleanup: cleanup,
-    updateCompendiumConfiguration: updateCompendiumConfiguration
+    updateCompendiumConfiguration: updateCompendiumConfiguration,
+    updatePathMetadata: updatePathMetadata
 };

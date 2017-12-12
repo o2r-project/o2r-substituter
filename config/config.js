@@ -42,9 +42,19 @@ c.fs.compendium = c.fs.base + 'compendium/';
 
 // metadata extraction and brokering options
 c.meta = {};
-c.meta.substituted = 'metadata.substituted';
+c.meta.substituted = 'substituted';
 c.meta.base = 'metadata.substitution.base';
 c.meta.overlay = 'metadata.substitution.overlay';
+
+// for updating path in metadata
+c.meta.updatePath = [
+  'mainfile_candidates', //    xjiYy/data/main.Rmd
+  'mainfile', //   xjiYy/data/main.Rmd
+  'inputfiles', //       xjiYy/data/BerlinMit.csv
+  'ercIdentifier', //      xjiYy
+  'displayfile', //      /api/v1/compendium/xjiYy/data/data/erc.yml
+  'codefiles'  //        xjiYy/data/main.Rmd
+  ]
 
 // metadata schema for saving
 c.meta.bag = false;
