@@ -42,7 +42,6 @@ c.fs.compendium = c.fs.base + 'compendium/';
 
 // metadata extraction and brokering options
 c.meta = {};
-c.meta.substituted = 'metadata.substituted';
 c.meta.base = 'metadata.substitution.base';
 c.meta.overlay = 'metadata.substitution.overlay';
 
@@ -51,10 +50,24 @@ c.meta.bag = false;
 c.meta.candidate = false;
 c.meta.compendium = true;
 
+// compendium configuration
+c.compendium = {};
+c.compendium.configFile = 'erc.yml';
+
 // docker commands
 c.docker = {};
+c.docker.volume = {};
+c.docker.volume.flag = "--volume ";
+c.docker.volume.basePath = '$(pwd)';
+c.docker.volume.containerWorkdir = '/erc';
+c.docker.volume.mode = ":ro";
+c.docker.mount = {};
+c.docker.mount.flag = "--mount ";
+c.docker.mount.basePath = '';
+c.docker.mount.containerWorkdir = '/erc';
+c.docker.mount.readonly = true;
 c.docker.cmd = 'docker run -it --rm';
-c.docker.imageNamePrefix = 'bagtainer:';
+c.docker.imageNamePrefix = 'erc:';
 
 c.id_length = 5; // length of substituted ids [0-9,a-z,A-Z]
 

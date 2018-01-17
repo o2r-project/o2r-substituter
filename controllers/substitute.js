@@ -281,7 +281,6 @@ function saveToDB(passon) {
         debug('[%s] Saving new compendium ...', passon.id);
         var metadataToSave = {};
         metadataToSave = passon.baseMetaData;
-        metadataToSave.substituted = passon.metadata.substituted;
         metadataToSave.substitution = passon.metadata.substitution;
         var compendium = new Compendium({
             id: passon.id,
@@ -289,7 +288,8 @@ function saveToDB(passon) {
             metadata: metadataToSave,
             bag: config.meta.bag,
             candidate: config.meta.candidate,
-            compendium: config.meta.compendium
+            compendium: config.meta.compendium,
+            substituted: passon.metadata.substituted
         });
 
         compendium.save(error => {
@@ -308,7 +308,7 @@ function saveToDB(passon) {
 }
 
 /**
- * function to start docker container
+ * function to create new execution command
  * @param {object} passon - compendium id and data of compendia
  */
 function createVolumeBinds(passon) {
@@ -317,7 +317,7 @@ function createVolumeBinds(passon) {
             debug('[%s] Starting creating volume binds ...', passon.id);
             passon.imageTag = config.docker.imageNamePrefix + passon.id;
             if (!passon.imageTag) {
-                debug('[%s] image tag was not passed.');
+                debug('[%s] image tag was not passed.', passon.id);
                 cleanup(passon);
                 reject(new Error('image tag was not passed on!'));
             }
@@ -325,13 +325,22 @@ function createVolumeBinds(passon) {
             debug('[%s] Starting creating volume binds with image [%s] ...', passon.id, passon.imageTag);
             let substFiles = passon.metadata.substitution.substitutionFiles;
             // data folder for erc.yaml
-            let baseBind = passon.substitutedPath + ":" + "/erc";
-            // for erc.yml
-            let cmdBinds = new Array();
-            let cmdBaseBind = "-v " + baseBind;
-            cmdBinds.push(cmdBaseBind);
-            for (let i = 0; i < substFiles.length; i++) {
+            let baseBind = config.docker.volume.basePath + ":" + config.docker.volume.containerWorkdir;
 
+            // https://docs.docker.com/engine/admin/volumes/bind-mounts/
+            let volumes = [];
+            let baseVolume = config.docker.volume.flag + baseBind;
+            volumes.push(baseVolume);
+
+            let bind_mounts = [];
+            bind_mounts.push({
+                type: "bind",
+                source: config.docker.mount.basePath,
+                destination: config.docker.mount.containerWorkdir,
+                readonly: config.docker.mount.readonly
+            });
+
+            for (let i = 0; i < substFiles.length; i++) {
                 let baseFileName = substFiles[i].base;
                 if (passon.bag) {
                     let splitCompBag = baseFileName.indexOf("/") + 1;    // split after ".../ERC_ID/data/" to get only filenamePath of basefile
@@ -339,23 +348,33 @@ function createVolumeBinds(passon) {
                 }
 
                 if (filenameNotExists(substFiles[i].filename)) {
-                  reject(new Error('substitution filename has not been passed correctly.'));
+                    reject(new Error('substitution filename has not been passed correctly.'));
+                    return;
                 }
 
-                let bind = path.join(passon.substitutedPath, substFiles[i].filename) + ":" + path.join("/erc", baseFileName) + ":ro";
-                let cmdBind = "-v " + bind;
-                cmdBinds.push(cmdBind);
+                // --volume mounts as string
+                let volumeParameterString = config.docker.volume.flag
+                    + path.join(config.docker.volume.basePath, substFiles[i].filename)
+                    + ":"
+                    + path.join(config.docker.volume.containerWorkdir, baseFileName)
+                    + config.docker.volume.mode;
+                volumes.push(volumeParameterString);
+
+                // --mount bind mounts as data structure
+                let mount = {
+                    type: "bind",
+                    source: substFiles[i].filename,
+                    destination: path.join(config.docker.mount.containerWorkdir, baseFileName),
+                    readonly: config.docker.mount.readonly
+                };
+                bind_mounts.push(mount);
             }
-            passon.yaml = {};
-            passon.yaml.binds = cmdBinds;
-            if (!passon.yaml.binds) {
-                debug('[%s] volume binds were not passed.');
-                cleanup(passon);
-                reject(new Error('volume binds were not passed!'));
-            } else {
-                debug('Finished creating volume binds with binds: \n%s', JSON.stringify(passon.yaml.binds));
-                fulfill(passon);
-            }
+            passon.execution = {};
+            passon.execution.volumes = volumes;
+            passon.execution.bind_mounts = bind_mounts;
+
+            debug('[%s] Finished creating volumes and mounts: \n%s', passon.id, JSON.stringify(passon.execution));
+            fulfill(passon);
         } catch (err) {
             debug('[%s] Error during creating volume binds with err:\n%s', passon.id, err);
             cleanup(passon);
@@ -387,39 +406,43 @@ function cleanup(passon) {
 function updateCompendiumConfiguration(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] Starting write yaml ...', passon.id);
-        let yamlPath = path.join(passon.substitutedPath, 'erc.yml');
+        let yamlPath = path.join(passon.substitutedPath, config.compendium.configFile);
         // check if erc.yml exists
         if (fse.existsSync(yamlPath)) {
             try {
                 let dockerCmd = config.docker.cmd;
-                let yamlBinds = passon.yaml.binds;
-                for (let i = 0; i < yamlBinds.length; i++) {
-                    dockerCmd = dockerCmd + " " + passon.yaml.binds[i];
-                }
+                passon.execution.volumes.forEach(vol => {
+                    dockerCmd += " " + vol;
+                });
+
                 let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                debug('[%s] Old erc.yml file: \n %s', passon.id, yaml.dump(doc));
+                debug('[%s] Old erc.yml file (%s):\n%s', passon.id, yamlPath, yaml.dump(doc));
                 if (!doc.execution) {
                     doc.execution = {};
                 }
                 doc.execution.cmd = "'" + dockerCmd + " " + passon.imageTag + "'";
-                debug('[%s] New erc.yml file: \n %s', passon.id, yaml.dump(doc));
-                writeYaml.sync(yamlPath, doc, function (err) {
-                    debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
-                    cleanup(passon);
-                    reject("Error writing erc.yml in: %s", yamlPath);
+                doc.execution.bind_mounts = passon.execution.bind_mounts;
+                writeYaml(yamlPath, doc, function (err) {
+                    if(err) {
+                        debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
+                        cleanup(passon);
+                        reject("Error writing erc.yml in: %s", yamlPath);
+                    } else {
+                        debug('[%s] New erc.yml file (%s): \n %s', passon.id, yamlPath, yaml.dump(doc));
+                        fulfill(passon);
+                    }
                 });
-                fulfill(passon);
             } catch (err) {
-                debug("[%s] Error writing erc.yml - err: %s", passon.id, err);
+                debug("[%s] Error writing erc.yml - err: %s", passon.iid, err);
                 cleanup(passon);
                 reject("Error writing erc.yml in: %s", yamlPath);
             }
         } else {
-            debug("[%s] missing configuration file (erc.yml) in base compendium, please execute a job for the base compedium first", passon.id);
+            debug("[%s] missing configuration file (erc.yml) in base compendium, please execute a job for the base compendium first", passon.id);
             cleanup(passon);
             var err = new Error();
             err.status = 400;
-            err.msg = 'missing configuration file in base compendium, please execute a job for the base compedium first';
+            err.msg = 'missing configuration file in base compendium, please execute a job for the base compendium first';
             reject(err);
         }
     })

@@ -23,8 +23,9 @@ var Compendium = require('../lib/model/compendium');
 
 exports.view = (req, res) => {
   var answer = {};
-  var filter = {};
-  filter[config.meta.substituted] = true;
+  var filter = {
+    substituted: true
+  };
   var limit = parseInt(req.query.limit || config.list_limit, 10);
   var start = parseInt(req.query.start || 1, 10) - 1;
 

@@ -1153,7 +1153,7 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    assert.include(body, { error: 'missing configuration file in base compendium, please execute a job for the base compedium first' });
+                    assert.include(body, { error: 'missing configuration file in base compendium, please execute a job for the base compendium first' });
                     done();
                 });
             });
