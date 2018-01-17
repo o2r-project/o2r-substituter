@@ -200,13 +200,12 @@ describe('Simple substitution of data with two ERCs', function () {
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with substituted metadata', (done) => {
+        it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
-                assert.property(response, 'metadata');
-                assert.property(response.metadata, 'substituted');
-                assert.propertyVal(response.metadata, 'substituted', true);
+                assert.property(response, 'substituted');
+                assert.propertyVal(response, 'substituted', true);
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -364,13 +363,12 @@ describe('Simple substitution of data with two ERCs', function () {
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with substituted metadata', (done) => {
+        it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
-                assert.property(response, 'metadata');
-                assert.property(response.metadata, 'substituted');
-                assert.propertyVal(response.metadata, 'substituted', true);
+                assert.property(response, 'substituted');
+                assert.propertyVal(response, 'substituted', true);
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -680,13 +678,12 @@ describe('Simple substitution of data with one ERC (as base) and one WORKSPACE (
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with substituted metadata', (done) => {
+        it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
-                assert.property(response, 'metadata');
-                assert.property(response.metadata, 'substituted');
-                assert.propertyVal(response.metadata, 'substituted', true);
+                assert.property(response, 'substituted');
+                assert.propertyVal(response, 'substituted', true);
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -830,13 +827,12 @@ describe('Simple substitution of data with one WORKSPACE (as base) and one ERC (
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with substituted metadata', (done) => {
+        it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
-                assert.property(response, 'metadata');
-                assert.property(response.metadata, 'substituted');
-                assert.propertyVal(response.metadata, 'substituted', true);
+                assert.property(response, 'substituted');
+                assert.propertyVal(response, 'substituted', true);
                 done();
             });
         }).timeout(requestReadingTimeout);
@@ -969,13 +965,12 @@ describe('Simple substitution of data with two WORKSPACEs', function () {
             });
         }).timeout(requestLoadingTimeout);
 
-        it('should respond with substituted metadata', (done) => {
+        it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
-                assert.property(response, 'metadata');
-                assert.property(response.metadata, 'substituted');
-                assert.propertyVal(response.metadata, 'substituted', true);
+                assert.property(response, 'substituted');
+                assert.propertyVal(response, 'substituted', true);
                 done();
             });
         }).timeout(requestReadingTimeout);
