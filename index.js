@@ -137,6 +137,7 @@ function initApp(callback) {
           substitution: req.body
         }
       };
+
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
       return controllers.substitute.getMetadata(passon)             // get metadata
         .then(controllers.substitute.checkOverlayId)                // check ERC id of overlay ERC
@@ -145,6 +146,7 @@ function initApp(callback) {
         .then(controllers.substitute.copyOverlayFiles)              // copy overlay files into folder
         .then(controllers.substitute.createVolumeBinds)             // create metadata for writing to yaml
         .then(controllers.substitute.updateCompendiumConfiguration) // write docker run cmd to erc.yml
+        .then(controllers.substitute.updatePathMetadata)            // update metadata of substituted ERC
         .then(controllers.substitute.saveToDB)                      // save to DB
         .then((passon) => {
           debug('[%s] Finished substitution of new compendium.', passon.id);

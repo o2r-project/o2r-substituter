@@ -45,6 +45,16 @@ c.meta = {};
 c.meta.base = 'metadata.substitution.base';
 c.meta.overlay = 'metadata.substitution.overlay';
 
+// for updating path in metadata
+c.meta.updatePath = [
+  'mainfile_candidates', //    xjiYy/data/main.Rmd
+  'mainfile', //   xjiYy/data/main.Rmd
+  'inputfiles', //       xjiYy/data/BerlinMit.csv
+  'ercIdentifier', //      xjiYy
+  'displayfile', //      /api/v1/compendium/xjiYy/data/data/erc.yml
+  'codefiles'  //        xjiYy/data/main.Rmd
+  ]
+
 // metadata schema for saving
 c.meta.bag = false;
 c.meta.candidate = false;
