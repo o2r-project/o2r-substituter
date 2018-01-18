@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM alpine:3.6
+FROM node:9-alpine
 
 RUN echo \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
@@ -21,7 +21,6 @@ RUN echo \
 
 # Add app and dependencies
 RUN apk add --no-cache \
-    nodejs \
     dumb-init \
   && rm -rf /var/cache
 
