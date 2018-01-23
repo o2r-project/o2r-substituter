@@ -14,6 +14,10 @@
  * limitations under the License.
  *
  */
+const util = require('util');
+const path = require('path');
+const debug = require('debug')('substituter:config');
+
 var c = {};
 c.net = {};
 c.mongo = {};
@@ -37,8 +41,8 @@ if (c.mongo.location[c.mongo.location.length-1] !== '/') {
 }
 
 // fs paths
-c.fs.base = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/'; // '/tmp/o2r-dev/';
-c.fs.compendium = c.fs.base + 'compendium/';
+c.fs.base = env.SUBSTITUTER_BASEPATH || '/tmp/o2r/';
+c.fs.compendium = path.join(c.fs.base, 'compendium');
 
 // metadata extraction and brokering options
 c.meta = {};
@@ -91,5 +95,7 @@ c.substitutionFilePrepend = 'overlay_';
 c.user = {};
 c.user.level = {};
 c.user.level.substitute = 50;
+
+debug('CONFIGURATION:\n%s', util.inspect(c, { depth: null, colors: true }));
 
 module.exports = c;

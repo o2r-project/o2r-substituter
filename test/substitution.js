@@ -306,7 +306,6 @@ describe('Simple substitution of data with two ERCs', function () {
                 assert.ifError(err);
                 let response = JSON.parse(body);
                 let rmdfile = path.join(config.fs.compendium, substituted_id, '/main.Rmd');
-                // let mainhtml = config.fs.compendium + substituted_id + '/data/main.html';
                 let mainhtml = path.join(config.fs.compendium, substituted_id, '/main.Rmd');
 
                 let doc = fse.readFileSync(mainhtml, 'utf8');
