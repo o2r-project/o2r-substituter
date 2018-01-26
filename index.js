@@ -28,10 +28,14 @@ const yaml = require('js-yaml');
 
 mongoose.Promise = global.Promise;
 const dbURI = config.mongo.location + config.mongo.database;
-mongoose.connect(dbURI, {
-  useMongoClient: true,
+const dbOptions = {
+  autoReconnect: true,
+  reconnectTries: Number.MAX_VALUE,
+  keepAlive: 30000,
+  socketTimeoutMS: 30000,
   promiseLibrary: global.Promise
-});
+};
+mongoose.connect(dbURI, dbOptions);
 mongoose.connection.on('error', (err) => {
   debug('Could not connect to MongoDB @ %s: %s', dbURI, err);
 });
@@ -199,7 +203,7 @@ dbBackoff.on('backoff', function (number, delay) {
 });
 dbBackoff.on('ready', function (number, delay) {
   debug('Connect to MongoDB (#%s)', number, delay);
-  mongoose.createConnection(dbURI, (err) => {
+  mongoose.connect(dbURI, dbOptions, (err) => {
     if (err) {
       debug('Error during connect: %s', err);
       mongoose.disconnect(() => {
