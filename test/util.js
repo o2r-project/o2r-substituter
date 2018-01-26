@@ -21,39 +21,40 @@ const AdmZip = require('adm-zip');
 const fs = require('fs');
 const config = require('../config/config')
 const path = require('path');
+const debug = require('debug')('test:util');
 
 function uploadCompendium(path, cookie, type = 'compendium') {
-    var zip = new AdmZip();
-    zip.addLocalFolder(path);
-    var tmpfile = tmp.tmpNameSync() + '.zip';
-    zip.writeZip(tmpfile);
+  var zip = new AdmZip();
+  zip.addLocalFolder(path);
+  var tmpfile = tmp.tmpNameSync() + '.zip';
+  zip.writeZip(tmpfile);
 
-    let formData = {
-      'content_type': type,
-      'compendium': {
-        value: fs.createReadStream(tmpfile),
-        options: {
-          filename: 'another.zip',
-          contentType: 'application/zip'
-        }
+  let formData = {
+    'content_type': type,
+    'compendium': {
+      value: fs.createReadStream(tmpfile),
+      options: {
+        filename: 'another.zip',
+        contentType: 'application/zip'
       }
-    };
-    let j = request.jar();
-    let ck = request.cookie('connect.sid=' + cookie);
-    j.setCookie(ck, global.test_host_upload);
+    }
+  };
+  let j = request.jar();
+  let ck = request.cookie('connect.sid=' + cookie);
+  j.setCookie(ck, global.test_host_upload);
 
-    let reqParams = {
-      uri: global.test_host_upload + '/api/v1/compendium',
-      method: 'POST',
-      jar: j,
-      formData: formData,
-      timeout: 10000
-    };
+  let reqParams = {
+    uri: global.test_host_upload + '/api/v1/compendium',
+    method: 'POST',
+    jar: j,
+    formData: formData,
+    timeout: 30000
+  };
 
-    return (reqParams);
+  return (reqParams);
 }
 
-function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie) {
+function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie) {
 
   let substitutionObject = {
     base: base_id,
@@ -64,7 +65,7 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
         overlay: overlay_file
       }
     ],
-    metadataHandling: metadatahandling
+    metadataHandling: metadataHandling
   }
 
   let j = request.jar();
@@ -75,8 +76,7 @@ function createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_f
     uri: global.test_host + '/api/v1/substitution',
     method: 'POST',
     jar: j,
-    json: substitutionObject,
-    timeout: 20000
+    json: substitutionObject
   };
 
   return (reqParams);
@@ -98,7 +98,7 @@ publishCandidate = function (compendium_id, cookie, done) {
     uri: global.test_host_read + '/api/v1/compendium/' + compendium_id + '/metadata',
     method: 'PUT',
     jar: j,
-    timeout: 20000
+    timeout: 30000
   };
 
   request(getMetadata, (err, res, body) => {
@@ -112,8 +112,9 @@ publishCandidate = function (compendium_id, cookie, done) {
       request(updateMetadata, (err, res, body) => {
         if (err || body.error) {
           console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
-          done(err || body.error)
+          done(err || body.error);
         } else {
+          debug("Published candidate: %s", JSON.stringify(body));
           done();
         }
       });
@@ -121,6 +122,29 @@ publishCandidate = function (compendium_id, cookie, done) {
   });
 }
 
-module.exports.uploadCompendium = uploadCompendium;
-module.exports.createSubstitutionPostRequest = createSubstitutionPostRequest;
-module.exports.publishCandidate = publishCandidate;
+startJob = function (compendium_id, done) {
+  let j = request.jar();
+  let ck = request.cookie('connect.sid=' + cookie_plain);
+  j.setCookie(ck, global.test_host_publish);
+
+  request({
+    uri: global.test_host_publish + '/api/v1/job',
+    method: 'POST',
+    jar: j,
+    formData: {
+      compendium_id: compendium_id
+    },
+    timeout: 10000
+  }, (err, res, body) => {
+    let response = JSON.parse(body);
+    debug("Started job: %s", JSON.stringify(response));
+    done(response.job_id);
+  });
+}
+
+module.exports = {
+  uploadCompendium: uploadCompendium,
+  createSubstitutionPostRequest: createSubstitutionPostRequest,
+  publishCandidate: publishCandidate,
+  startJob: startJob
+}
