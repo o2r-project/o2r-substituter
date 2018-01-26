@@ -212,7 +212,7 @@ describe.only('Substitution with two compendia', function () {
             });
         });
 
-        it("should fail the check step of a job execution but succeed other steps", (done) => {
+        it("should fail the check step of a job execution, skip bag validation (it's not a bag anymore), but succeed other steps", (done) => {
             startJob(substituted_id, id => {
                 job_id = id;
                 assert.isOk(id);
@@ -222,7 +222,7 @@ describe.only('Substitution with two compendia', function () {
                     assert.ifError(err);
                     response = JSON.parse(body);
                     assert.propertyVal(response, 'status', 'failure');
-                    assert.propertyVal(response.steps.validate_bag, 'status', 'success');
+                    assert.propertyVal(response.steps.validate_bag, 'status', 'skipped');
                     assert.propertyVal(response.steps.validate_compendium, 'status', 'success');
                     assert.propertyVal(response.steps.image_prepare, 'status', 'success');
                     assert.propertyVal(response.steps.image_build, 'status', 'success');
