@@ -1,7 +1,6 @@
-7baa85d872f568b77b27c84ff3f3efee  data/jss.cls
-b9564ddd59a06782310989e8f33db55e  data/jsslogo.jpg
-5cab62eef68ccda54640d8fcaf08194c  data/Dockerfile
-43d2a3127b8c563b5e23f63b66174392  data/main.Rmd
+d41d8cd98f00b204e9800998ecf8427e  data/.Rhistory
 8ec13ada27c2e6ddd304003442d5dd63  data/BerlinMit.csv
-78e09197309da039e1df42ef3d3369ee  data/erc.yml
-9e13367ef4850e3c0d4fa27c607e2137  data/jss.bst
+626dac6b5ce6fd3e43c2dcbc8d301716  data/Dockerfile
+919d2f2653fa4836562088ed19015469  data/erc.yml
+a5449af6841cc1f84827207e8ecbc6e9  data/main.Rmd
+25f282c09fc171255f57b3ebb3fc4d58  data/main.html

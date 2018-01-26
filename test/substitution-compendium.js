@@ -18,7 +18,6 @@
 /* eslint-env mocha */
 const assert = require('chai').assert;
 const request = require('request');
-const fse = require('fs-extra');
 const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
@@ -26,21 +25,19 @@ const sleep = require('sleep');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
-const requestLoadingTimeout = 30000;
-const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 const publishCandidate = require('./util').publishCandidate;
 
 
-describe('Substitution of data with two compendia', function () {
+describe.only('Substitution with two compendia', function () {
     var base_id;
     var overlay_id;
-    var metadatahandling = "keepBase";
+    var metadataHandling = "keepBase";
 
     before(function (done) {
-        let req_erc_base02 = uploadCompendium('./test/erc/base02', cookie_o2r);
-        let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
+        let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
+        let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(60000);
 
         // first upload
@@ -65,17 +62,13 @@ describe('Substitution of data with two compendia', function () {
         });
     });
 
-    // use two compendia (uploaded before) to run substitution
-    describe('POST /api/v1/substitution with two valid ERCs', () => {
-        var substituted_id;
-        var substituted_id_moreOverlays;
+    describe('POST /api/v1/substitution', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should respond with HTTP 200 OK and valid JSON', (done) => {
-
+        it('should respond with HTTP 200 OK', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -83,37 +76,62 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid JSON', (done) => {
-
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
+                    assert.isObject(body);
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.property(body, 'id');
                     assert.isString(body.id);
-                    substituted_id = body.id;
 
-                    publishCandidate(substituted_id, cookie_o2r, (err) => {
+                    publishCandidate(body.id, cookie_o2r, (err) => {
                         assert.ifError(err);
                         done();
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
+    });
+
+    describe('Substitution metadata', () => {
+        let substituted_id;
+        let base_file = "data/BerlinMit.csv";
+        let overlay_file = "data/BerlinOhne.csv";
+
+        before(function (done) {
+            this.timeout(60000);
+
+            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
+
+                request(req, (err, res, body) => {
+                    assert.ifError(err);
+                    assert.property(body, 'id');
+                    assert.isString(body.id);
+
+                    publishCandidate(body.id, cookie_o2r, (err) => {
+                        assert.ifError(err);
+                        substituted_id = body.id;
+                        done();
+                    });
+                });
+            });
+        });
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -123,7 +141,7 @@ describe('Substitution of data with two compendia', function () {
                 assert.propertyVal(response, 'substituted', true);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay ID', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -136,9 +154,9 @@ describe('Substitution of data with two compendia', function () {
                 assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
-        it('should respond with metadata for base and overlay filenames, and new filename at root directory', (done) => {
+        it('should respond with metadata for base and overlay filenames, and new filenames now at root directory (not a compendium anymore)', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
@@ -151,11 +169,95 @@ describe('Substitution of data with two compendia', function () {
                 assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', "data/BerlinOhne.csv");
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
-        it('should respond with correct substitution file list with multiple overlays', (done) => {
+        it('should respond with existence of substituted ERC files', (done) => {
+            getFile(substituted_id, 'BerlinMit.csv', (err, res, body) => {
+                assert.ifError(err);
+                assert.equal(res.statusCode, 200);
+                assert.include(body, '1990,18186');
+
+                getFile(substituted_id, 'BerlinOhne.csv', (err, res, body) => {
+                    assert.ifError(err);
+                    assert.equal(res.statusCode, 200);
+                    assert.include(body, '1990,61568');
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('Substitution execution', () => {
+        let substituted_id, job_id;
+        let base_file = "data/BerlinMit.csv";
+        let overlay_file = "data/BerlinOhne.csv";
+
+        before(function (done) {
+            this.timeout(60000);
+
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
+
+                request(req, (err, res, body) => {
+                    assert.ifError(err);
+                    assert.property(body, 'id');
+                    assert.isString(body.id);
+
+                    publishCandidate(body.id, cookie_o2r, (err) => {
+                        assert.ifError(err);
+                        substituted_id = body.id;
+                        done();
+                    });
+                });
+            });
+        });
+
+        it("should fail the check step of a job execution but succeed other steps", (done) => {
+            startJob(substituted_id, id => {
+                job_id = id;
+                assert.isOk(id);
+                
+                sleep.sleep(30);
+                request(global.test_host_read + '/api/v1/job/' + job_id, (err, res, body) => {
+                    assert.ifError(err);
+                    response = JSON.parse(body);
+                    assert.propertyVal(response, 'status', 'failure');
+                    assert.propertyVal(response.steps.validate_bag, 'status', 'success');
+                    assert.propertyVal(response.steps.validate_compendium, 'status', 'success');
+                    assert.propertyVal(response.steps.image_prepare, 'status', 'success');
+                    assert.propertyVal(response.steps.image_build, 'status', 'success');
+                    assert.propertyVal(response.steps.image_execute, 'status', 'success');
+                    assert.propertyVal(response.steps.cleanup, 'status', 'success');
+                    done();
+                });
+
+                done();
+            });
+        }).timeout(60000);
+
+        // base uses points for the plot, the overlay uses lines
+        it('job display file should have been created with overlay dataset', (done) => {
+            // should not be base data ("mitBerlin"), maximum is 55.1
+            // should be overlay data ("ohneBerlin"), maximum is 1051.2
+
+            request(global.test_host_files + '/api/v1/job/' + job_id + '/data/main.html', (err, res, body) => {
+                assert.ifError(err);
+                
+                let string_ = 'maximum of ‘Gesamtbilanz’: 1051.2';
+                assert.include(body, string_);
+                done();
+            });
+        });
+    });
+
+    describe('Substitution metadata with more overlays', () => {
+        let substituted_id_moreOverlays;
+        let base_file = "data/BerlinMit.csv";
+        let overlay_file = "data/BerlinOhne.csv";
+
+        before(function (done) {
+            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 req.json.substitutionFiles.push({ base: "data/Dockerfile", overlay: "data/erc.yml" });
                 req.json.substitutionFiles.push({ base: "data/main.Rmd", overlay: "data/Dockerfile" });
@@ -168,65 +270,29 @@ describe('Substitution of data with two compendia', function () {
 
                     publishCandidate(substituted_id_moreOverlays, cookie_o2r, (err) => {
                         assert.ifError(err);
-                        request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
-                            assert.ifError(err);
-                            let response = JSON.parse(body);
-                            assert.property(response.metadata.substitution, 'substitutionFiles');
-                            assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
-
-                            done();
-                        });
+                        done();
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
-        it('should respond with correct written erc.yml with multiple overlays', (done) => {
+        it('should respond with correct substitution file list with multiple overlays', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
                 assert.ifError(err);
-                let response = JSON.parse(body);
-                assert.property(response.metadata.substitution, 'substitutionFiles');
-                assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
-
-                let yamlPath = path.join(config.fs.compendium, substituted_id_moreOverlays, "erc.yml");
-                let dockerCmd = config.docker.cmd;
-                let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.include(doc.execution.cmd, "BerlinOhne.csv:" + path.join("/erc", "BerlinMit.csv") + ":ro");  //alt: "data/..." in mount
-                assert.include(doc.execution.cmd, "overlay_erc.yml:" + path.join("/erc", "Dockerfile") + ":ro");
-                assert.include(doc.execution.cmd, "overlay_Dockerfile:" + path.join("/erc", "main.Rmd") + ":ro");
+                assert.property(body.metadata.substitution, 'substitutionFiles');
+                assert.equal(body.metadata.substitution.substitutionFiles.length, 3);
                 done();
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
-        it('should respond with existence of substituted ERC files', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                let basefilePath = path.join(config.fs.compendium, substituted_id, "BerlinMit.csv"); //".../ERC_ID/BerlinMit.csv"
-                let overlayfilePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename); // ".../ERC_ID/BerlinOhne.csv"
-                assert.equal(fse.existsSync(basefilePath), true, 'base file should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(overlayfilePath), true, 'overlay file should exist in folder of substituted ERC');
+        it('should respond with correct written erc.yml with multiple overlays', (done) => {
+            getErcYml(substituted_id_moreOverlays, doc => {
+                assert.include(doc.execution.cmd, "BerlinOhne.csv:/erc/BerlinMit.csv:ro");
+                assert.include(doc.execution.cmd, "overlay_erc.yml:/erc/Dockerfile:ro");
+                assert.include(doc.execution.cmd, "overlay_Dockerfile:/erc/main.Rmd:ro");
                 done();
             });
-        }).timeout(requestReadingTimeout);
-
-        // TODO: this is for testing inline code, if substitution was successful with the right file
-        it.skip('should respond with correct integer of mounted overlay dataset', (done) => {
-            // should not be: base02 -> "mitBerlin": Gesamtbilanz = 55.1, Jahr = 2014
-            // should be:  overlay02 -> "ohneBerlin": Gesamtbilanz = 1051.2, Jahr = 1990
-
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                let rmdfile = path.join(config.fs.compendium, substituted_id, '/main.Rmd');
-                let mainhtml = path.join(config.fs.compendium, substituted_id, '/main.Rmd');
-
-                let doc = fse.readFileSync(mainhtml, 'utf8');
-                let string_ = '"' + 'This is the maximum of ' + "'" + 'Gesamtbilanz' + "'" + ': 1051.2' + '"';
-                assert.include(doc, string_);
-                done();
-            });
-        }) //.timeout(requestReadingTimeout); //TODO: till "" Error: cannot read property of undefined
+        });
     });
 
     describe('POST /api/v1/substitution with an overlay filename that already exists as an base filename', () => {
@@ -236,7 +302,7 @@ describe('Substitution of data with two compendia', function () {
 
         it('should respond with HTTP 200 OK', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -244,24 +310,23 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid JSON', (done) => {
-
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
-                    assert.isObject(body, 'returned JSON');
+                    assert.isObject(body);
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
-        it('should respond with valid ID', (done) => {
+        it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -275,7 +340,7 @@ describe('Substitution of data with two compendia', function () {
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -285,7 +350,7 @@ describe('Substitution of data with two compendia', function () {
                 assert.propertyVal(response, 'substituted', true);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay ID', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -298,7 +363,7 @@ describe('Substitution of data with two compendia', function () {
                 assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base, overlay and filename', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -308,24 +373,12 @@ describe('Substitution of data with two compendia', function () {
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'base');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'overlay');
                 assert.property(response.metadata.substitution.substitutionFiles[0], 'filename');
-                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', "data/main.Rmd");  // alt: "data/..."
-                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', "data/main.Rmd");  // this is not touched, if "substitutionFiles[i].filename" exists
-                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "overlay_main.Rmd");  //alt: "data/..."
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'base', "data/main.Rmd");
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'overlay', "data/main.Rmd");
+                assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "overlay_main.Rmd");
                 done();
             });
-        }).timeout(requestReadingTimeout);
-
-        it('should respond with existence of substituted ERC files', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                let basefilePath = path.join(config.fs.compendium, substituted_id, "main.Rmd"); //".../ERC_ID/main.Rmd"
-                let filenamePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename); //".../ERC_ID/overlay_main.Rmd"
-                assert.equal(fse.existsSync(basefilePath), true, 'base file should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(filenamePath), true, 'filename file ("overlay_" + overlay file) should exist in folder of substituted ERC');
-                done();
-            });
-        }).timeout(requestReadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with invalid base ID', () => {
@@ -335,7 +388,7 @@ describe('Substitution of data with two compendia', function () {
 
         it('should fail the substitution because of invalid base ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -344,16 +397,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with missing base ID', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of missing base ID', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                 delete req.json.base;
 
                 request(req, (err, res, body) => {
@@ -363,7 +416,7 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with invalid overlay ID', () => {
@@ -371,9 +424,9 @@ describe('Substitution of data with two compendia', function () {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of invalid overlay ID', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -382,7 +435,7 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with missing overlay ID', () => {
@@ -390,9 +443,9 @@ describe('Substitution of data with two compendia', function () {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of missing overlay ID', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                 delete req.json.overlay;
 
                 request(req, (err, res, body) => {
@@ -402,16 +455,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with invalid base file', () => {
         let base_file = "doesNotExist.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of invalid base file', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -420,16 +473,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with invalid overlay file', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "doesNotExist.csv";
 
-        it('should fail the substitution because of invalid overlay file', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -438,16 +491,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with empty substitution files', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of empty substitution files', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                 req.json.substitutionFiles = [];   // set Array of substitutionFiles empty
 
                 request(req, (err, res, body) => {
@@ -457,16 +510,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
     describe('POST /api/v1/substitution with no substitution files', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of no substitution files', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                 delete req.json.substitutionFiles;
 
                 request(req, (err, res, body) => {
@@ -476,16 +529,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
-    describe('POST /api/v1/substitution with only base filename in substitution files', () => {
+    describe('POST /api/v1/substitution with only base filename but no overlay filename', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of no overlay file in substitution files', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                 req.json.substitutionFiles = [{
                     base: "data/BerlinMit.csv"
                 }];
@@ -497,16 +550,16 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 
-    describe('POST /api/v1/substitution with only overlay filename in substitution files', () => {
+    describe('POST /api/v1/substitution with only overlay filename but not base filename', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should fail the substitution because of no base file in substitution files', (done) => {
+        it('should fail with HTTP 400 and error message', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                 req.json.substitutionFiles = [{
                     overlay: "data/BerlinOhne.csv"
                 }];
@@ -518,7 +571,7 @@ describe('Substitution of data with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
     });
 });
 
@@ -526,11 +579,11 @@ describe('Substitution of data with two compendia', function () {
 describe('Substitution with two compendia checking path updating', function () {
     var base_id;
     var overlay_id;
-    var metadatahandling = "keepBase";
+    var metadataHandling = "keepBase";
 
     before(function (done) {
-        let req_erc_base02 = uploadCompendium('./test/erc/base02', cookie_o2r);
-        let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
+        let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
+        let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(60000);
 
         // first upload
@@ -555,8 +608,7 @@ describe('Substitution with two compendia checking path updating', function () {
         });
     });
 
-    // use two compendia (uploaded before) to run substitution
-    describe('POST /api/v1/substitution with two valid ERCs', () => {
+    describe('POST /api/v1/substitution with two valid compendia', () => {
         var substituted_id;
         var substituted_id_moreOverlays;
         let base_file = "data/BerlinMit.csv";
@@ -565,7 +617,7 @@ describe('Substitution with two compendia checking path updating', function () {
         it('should respond with HTTP 200 OK and valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -573,23 +625,23 @@ describe('Substitution with two compendia checking path updating', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -603,7 +655,7 @@ describe('Substitution with two compendia checking path updating', function () {
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with substituted metadata', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -613,7 +665,7 @@ describe('Substitution with two compendia checking path updating', function () {
                 assert.propertyVal(response, 'substituted', true);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with substituted ERC id in o2r metadata', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -625,7 +677,7 @@ describe('Substitution with two compendia checking path updating', function () {
                 assert.propertyVal(response.metadata.o2r, 'ercIdentifier', substituted_id);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with updated path in o2r metadata', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -637,7 +689,7 @@ describe('Substitution with two compendia checking path updating', function () {
                 assert.propertyVal(response.metadata.o2r, 'mainfile', 'main.Rmd');
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
     });
 });

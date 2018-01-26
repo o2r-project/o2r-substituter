@@ -14,6 +14,7 @@ before_install:
   - docker pull o2rproject/o2r-muncher:latest
   - docker pull o2rproject/o2r-meta:latest
   - docker pull mongo:3.4
+  - docker pull rocker/verse:3.4.2
 install:
   - npm install
   - npm install -g mocha
@@ -22,6 +23,7 @@ before_script:
   - docker run --name mongodb -d -p 27017:27017 mongo:3.4
   - docker run --name testloader  -d -p 8088:8088 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -v /var/run/docker.sock:/var/run/docker.sock -e LOADER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-loader:latest
   - docker run --name testmuncher -d -p 8080:8080 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -v /var/run/docker.sock:/var/run/docker.sock -e MUNCHER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-muncher:latest
+  - docker run --name testtransporter -d -p 8081:8081 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -v /var/run/docker.sock:/var/run/docker.sock -e MUNCHER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* o2rproject/o2r-muncher:latest
   - docker build --tag substituter -f Dockerfile .
   - docker run --name testsubstituter -d -p 8090:8090 --link mongodb:mongodb -v /tmp/o2r:/tmp/o2r -e SUBSTITUTER_MONGODB=mongodb://mongodb:27017 -e DEBUG=* substituter:latest
   - sleep 10
