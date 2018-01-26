@@ -25,8 +25,6 @@ const sleep = require('sleep');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
-const requestLoadingTimeout = 30000;
-const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 const publishCandidate = require('./util').publishCandidate;
@@ -81,7 +79,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid ID (and now publish it)', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
@@ -99,7 +97,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        }).timeout(20000);
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -109,7 +107,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                 assert.propertyVal(response, 'substituted', true);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay ID', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -122,7 +120,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                 assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay filenames, and new filename at root directory', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -137,34 +135,30 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                 assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "BerlinOhne.csv");
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with correct written erc.yml one overlay', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                assert.property(response.metadata.substitution, 'substitutionFiles');
-                assert.equal(response.metadata.substitution.substitutionFiles.length, 1);
-
-                let yamlPath = path.join(config.fs.compendium, substituted_id, "erc.yml");
-                let dockerCmd = config.docker.cmd;
-                let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.include(doc.execution.cmd, "BerlinOhne.csv:" + path.join("/erc", "BerlinMit.csv") + ":ro");
+            getErcYml(substituted_id, doc => {
+                assert.include(doc.execution.cmd, "BerlinOhne.csv:/erc/BerlinMit.csv:ro");
                 done();
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
-        it('should respond with existence of substituted ERC files', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+        it('should respond with existence of both base and substituted files', (done) => {
+            getFile(substituted_id, 'BerlinMit.csv', (err, res, body) => {
                 assert.ifError(err);
-                let response = JSON.parse(body);
-                let basefilePath = path.join(config.fs.compendium, substituted_id, "BerlinMit.csv");
-                let overlayFilePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename);
-                assert.equal(fse.existsSync(basefilePath), true, 'base file should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(overlayFilePath), true, 'overlay file should exist in folder of substituted ERC');
-                done();
+                assert.equal(res.statusCode, 200);
+                assert.equal(body, '1990,18186');
+
+                getFile(substituted_id, 'BerlinOhne.csv', (err, res, body) => {
+                    assert.ifError(err);
+
+                    assert.equal(res.statusCode, 200);
+                    assert.equal(body, '1990,61568');
+                    done();
+                });
             });
-        }).timeout(requestReadingTimeout);
+        });
     });
 });
 
@@ -217,7 +211,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid JSON', (done) => {
 
@@ -230,7 +224,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
@@ -248,7 +242,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -258,7 +252,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
                 assert.propertyVal(response, 'substituted', true);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay ID', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -271,7 +265,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
                 assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay filenames, and new filename at root directory', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -286,34 +280,29 @@ describe('Substitution of data with one workspace as base and one compendium as 
                 assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "overlay_overlay_BerlinOhne.csv");
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with correct written erc.yml one overlay', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                assert.property(response.metadata.substitution, 'substitutionFiles');
-                assert.equal(response.metadata.substitution.substitutionFiles.length, 1);
-
-                let yamlPath = path.join(config.fs.compendium, substituted_id, "erc.yml");
-                let dockerCmd = config.docker.cmd;
-                let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.include(doc.execution.cmd, "overlay_overlay_BerlinOhne.csv:" + path.join("/erc", "files/BerlinMit.csv") + ":ro");
+            getErcYml(substituted_id, doc => {
+                assert.include(doc.execution.cmd, "overlay_overlay_BerlinOhne.csv:/erc/files/BerlinMit.csv:ro");
                 done();
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with existence of substituted ERC files', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
+            getFile(substituted_id, 'overlay_overlay_BerlinOhne.csv', (err, res, body) => {
                 assert.ifError(err);
-                let response = JSON.parse(body);
-                let basefilePath = path.join(config.fs.compendium, substituted_id, "files/BerlinMit.csv");
-                let overlayfilePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename);
-                assert.equal(fse.existsSync(basefilePath), true, 'base file should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(overlayfilePath), true, 'overlay file should exist in folder of substituted ERC');
-                done();
+                assert.equal(res.statusCode, 200);
+                assert.equal(body, '1,2,3');
+
+                request(global.test_host_read + '/api/v1/compendium/' + substituted_id + '/data/files/BerlinMit.csv', (err, res, body) => {
+                    if (err) done(err);
+                    assert.equal(res.statusCode, 200);
+                    assert.include(body, '1990,18186');
+                    done();
+                });
             });
-        }).timeout(requestReadingTimeout);
+        });
     });
 });
 
@@ -367,7 +356,7 @@ describe('Failing substitution of data with one workspace as base and compendium
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should fail with error configuration is missing', (done) => {
 
@@ -380,7 +369,7 @@ describe('Failing substitution of data with one workspace as base and compendium
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
     });
 });

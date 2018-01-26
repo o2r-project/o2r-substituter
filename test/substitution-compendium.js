@@ -105,7 +105,7 @@ describe.only('Substitution with two compendia', function () {
                     });
                 });
             });
-        });
+        }).timeout(20000);
     });
 
     describe('Substitution metadata', () => {
@@ -256,6 +256,8 @@ describe.only('Substitution with two compendia', function () {
         let overlay_file = "data/BerlinOhne.csv";
 
         before(function (done) {
+            this.timeout(60000);
+            
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
@@ -279,8 +281,9 @@ describe.only('Substitution with two compendia', function () {
         it('should respond with correct substitution file list with multiple overlays', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
                 assert.ifError(err);
-                assert.property(body.metadata.substitution, 'substitutionFiles');
-                assert.equal(body.metadata.substitution.substitutionFiles.length, 3);
+                response = JSON.parse(body);
+                assert.property(response.metadata.substitution, 'substitutionFiles');
+                assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
                 done();
             });
         });
@@ -340,7 +343,7 @@ describe.only('Substitution with two compendia', function () {
                     });
                 });
             });
-        });
+        }).timeout(20000);
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -655,7 +658,7 @@ describe('Substitution with two compendia checking path updating', function () {
                     });
                 });
             });
-        });
+        }).timeout(20000);
 
         it('should respond with substituted metadata', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {

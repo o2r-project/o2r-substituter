@@ -18,7 +18,6 @@
 /* eslint-env mocha */
 const assert = require('chai').assert;
 const request = require('request');
-const fse = require('fs-extra');
 const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
@@ -26,17 +25,17 @@ const sleep = require('sleep');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
-const requestLoadingTimeout = 30000;
-const requestReadingTimeout = 10000;
 const uploadCompendium = require('./util').uploadCompendium;
 const createSubstitutionPostRequest = require('./util').createSubstitutionPostRequest;
 const publishCandidate = require('./util').publishCandidate;
+const getErcYml = require('./util').getErcYml;
+const getFile = require('./util').getFile;
 
 
 describe('Substitution of data with two workspaces', function () {
     var base_id;
     var overlay_id;
-    var metadatahandling = "keepBase";
+    var metadataHandling = "keepBase";
 
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
@@ -65,7 +64,7 @@ describe('Substitution of data with two workspaces', function () {
         });
     });
 
-    describe('POST /api/v1/substitution', () => {
+    describe('POST /api/v1/substitution responses', () => {
         var substituted_id;
         var substituted_id_moreOverlays;
         let base_file = "files/BerlinMit.csv";
@@ -74,7 +73,7 @@ describe('Substitution of data with two workspaces', function () {
         it('should respond with HTTP 200 OK and valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -83,11 +82,11 @@ describe('Substitution of data with two workspaces', function () {
                     done();
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
         it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -101,7 +100,46 @@ describe('Substitution of data with two workspaces', function () {
                     });
                 });
             });
-        }).timeout(requestLoadingTimeout);
+        }).timeout(20000);
+    });
+
+    describe('Substitution metadata', () => {
+        let substituted_id;
+        var substituted_id_moreOverlays;
+        let base_file = "files/BerlinMit.csv";
+        let overlay_file = "BerlinOhne.csv";
+
+        before(function (done) {
+            this.timeout(60000);
+            let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
+            request(req, (err, res, body) => {
+                assert.ifError(err);
+                assert.property(body, 'id');
+                assert.isString(body.id);
+                substituted_id = body.id;
+
+                publishCandidate(substituted_id, cookie_o2r, (err) => {
+                    assert.ifError(err);
+
+                    // second substitution for tests
+                    let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
+                    req.json.substitutionFiles.push({ base: "Dockerfile", overlay: "main.Rmd" });
+                    req.json.substitutionFiles.push({ base: "main.Rmd", overlay: "Dockerfile" });
+
+                    request(req, (err, res, body) => {
+                        assert.ifError(err);
+                        assert.property(body, 'id');
+                        assert.isString(body.id);
+                        substituted_id_moreOverlays = body.id;
+
+                        publishCandidate(substituted_id_moreOverlays, cookie_o2r, (err) => {
+                            assert.ifError(err);
+                            done();
+                        });
+                    });
+                });
+            });
+        });
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -111,7 +149,7 @@ describe('Substitution of data with two workspaces', function () {
                 assert.propertyVal(response, 'substituted', true);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay ID', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -124,7 +162,7 @@ describe('Substitution of data with two workspaces', function () {
                 assert.propertyVal(response.metadata.substitution, 'overlay', overlay_id);
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
         it('should respond with metadata for base and overlay filenames, and new filename at root directory', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -139,90 +177,76 @@ describe('Substitution of data with two workspaces', function () {
                 assert.propertyVal(response.metadata.substitution.substitutionFiles[0], 'filename', "overlay_overlay_BerlinOhne.csv");
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
 
-        it('should respond with correct written erc.yml one overlay', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                assert.property(response.metadata.substitution, 'substitutionFiles');
-                assert.equal(response.metadata.substitution.substitutionFiles.length, 1);
-
-                let yamlPath = path.join(config.fs.compendium, substituted_id, "erc.yml");
-                let dockerCmd = config.docker.cmd;
-                let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.include(doc.execution.cmd, "overlay_overlay_BerlinOhne.csv:" + path.join("/erc", "files/BerlinMit.csv") + ":ro");
+        it('should respond with correct execution command in erc.yml', (done) => {
+            getErcYml(substituted_id, doc => {
+                assert.include(doc.execution.cmd, "overlay_overlay_BerlinOhne.csv:/erc/files/BerlinMit.csv:ro");
                 done();
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
-        it('should respond with existence of substituted ERC files', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
-                assert.ifError(err);
-                let response = JSON.parse(body);
-                let basefilePath = path.join(config.fs.compendium, substituted_id, "files/BerlinMit.csv");
-                let overlayfilePath = path.join(config.fs.compendium, substituted_id, response.metadata.substitution.substitutionFiles[0].filename);
-                assert.equal(fse.existsSync(basefilePath), true, 'base file should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(overlayfilePath), true, 'overlay file should exist in folder of substituted ERC');
+        it('should respond with correct binds in erc.yml', (done) => {
+            getErcYml(substituted_id, doc => {
+                assert.isArray(doc.execution.bind_mounts);
+                doc.execution.bind_mounts.forEach(bind => {
+                    assert.isObject(bind);
+                    assert.propertyVal(bind, 'readonly', true);
+                    assert.propertyVal(bind, 'type', 'bind');
+                });
+                assert.oneOf('overlay_overlay_BerlinOhne.csv', doc.execution.bind_mounts.map(bind => { return (bind.source); }));
+                assert.oneOf('/erc', doc.execution.bind_mounts.map(bind => { return (bind.destination); }));
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
+
+        it('should respond with overlay file from the substitution', (done) => {
+            getFile(substituted_id, 'overlay_overlay_BerlinOhne.csv', (err, res, body) => {
+                assert.ifError(err);
+
+                assert.equal(res.statusCode, 200);
+                assert.equal(body, '1,2,3');
+                done();
+            });
+        });
 
         it('should respond with correct substitution file list with multiple overlays', (done) => {
-            request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
-
-                req.json.substitutionFiles.push({ base: "Dockerfile", overlay: "main.Rmd" });
-                req.json.substitutionFiles.push({ base: "main.Rmd", overlay: "Dockerfile" });
-
-                request(req, (err, res, body) => {
-                    assert.ifError(err);
-                    assert.property(body, 'id');
-                    assert.isString(body.id);
-                    substituted_id_moreOverlays = body.id;
-
-                    publishCandidate(substituted_id_moreOverlays, cookie_o2r, (err) => {
-                        assert.ifError(err);
-                        request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
-                            assert.ifError(err);
-                            let response = JSON.parse(body);
-                            assert.property(response.metadata.substitution, 'substitutionFiles');
-                            assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
-
-                            done();
-                        });
-                    });
-                });
-            });
-        }).timeout(requestLoadingTimeout);
-
-        it('should respond with correct written erc.yml with multiple overlays', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
                 assert.property(response.metadata.substitution, 'substitutionFiles');
                 assert.equal(response.metadata.substitution.substitutionFiles.length, 3);
-
-                let yamlPath = path.join(config.fs.compendium, substituted_id_moreOverlays, "erc.yml");
-                let dockerCmd = config.docker.cmd;
-                let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                assert.include(doc.execution.cmd, "BerlinOhne.csv:" + path.join("/erc", "files/BerlinMit.csv") + ":ro");
-                assert.include(doc.execution.cmd, "overlay_main.Rmd:" + path.join("/erc", "Dockerfile") + ":ro");
-                assert.include(doc.execution.cmd, "overlay_Dockerfile:" + path.join("/erc", "main.Rmd") + ":ro");
                 done();
             });
-        }).timeout(requestLoadingTimeout);
+        });
 
-        it('should respond with existence of substituted ERC files', (done) => {
-            request(global.test_host_read + '/api/v1/compendium/' + substituted_id_moreOverlays, (err, res, body) => {
+        it('should respond with correct written erc.yml with multiple overlays', (done) => {
+            getErcYml(substituted_id_moreOverlays, doc => {
+                assert.include(doc.execution.cmd, "BerlinOhne.csv:/erc/files/BerlinMit.csv:ro");
+                assert.include(doc.execution.cmd, "overlay_main.Rmd:/erc/Dockerfile:ro");
+                assert.include(doc.execution.cmd, "overlay_Dockerfile:/erc/main.Rmd:ro");
+                done();
+            });
+        });
+
+        it('should respond with correct overlay file from substitution', (done) => {
+            getFile(substituted_id_moreOverlays, 'overlay_main.Rmd', (err, res, body) => {
                 assert.ifError(err);
-                let response = JSON.parse(body);
-                let basefilePath = path.join(config.fs.compendium, substituted_id_moreOverlays, "main.Rmd");
-                let overlayfilePath = path.join(config.fs.compendium, substituted_id_moreOverlays, "overlay_main.Rmd");
-                assert.equal(fse.existsSync(basefilePath), true, 'basefile should exist in folder of substituted ERC');
-                assert.equal(fse.existsSync(overlayfilePath), true, 'overlayfile should exist in folder of substituted ERC');
+
+                assert.equal(res.statusCode, 200);
+                assert.include(body, '02 ohne Berlin');
                 done();
             });
-        }).timeout(requestReadingTimeout);
+        });
+
+        it('should respond with correct base file from substitution', (done) => {
+            getFile(substituted_id_moreOverlays, 'main.Rmd', (err, res, body) => {
+                assert.ifError(err);
+
+                assert.equal(res.statusCode, 200);
+                assert.include(body, '01 mit Berlin');
+                done();
+            });
+        });
     });
 });
