@@ -38,7 +38,7 @@ describe.only('Substitution with two compendia', function () {
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
-        this.timeout(60000);
+        this.timeout(120000);
 
         // first upload
         request(req_erc_base02, (err, res, body) => {
@@ -114,7 +114,7 @@ describe.only('Substitution with two compendia', function () {
         let overlay_file = "data/BerlinOhne.csv";
 
         before(function (done) {
-            this.timeout(60000);
+            this.timeout(120000);
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
@@ -193,7 +193,7 @@ describe.only('Substitution with two compendia', function () {
         let overlay_file = "data/BerlinOhne.csv";
 
         before(function (done) {
-            this.timeout(60000);
+            this.timeout(120000);
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
@@ -256,7 +256,7 @@ describe.only('Substitution with two compendia', function () {
         let overlay_file = "data/BerlinOhne.csv";
 
         before(function (done) {
-            this.timeout(60000);
+            this.timeout(120000);
             
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
@@ -587,7 +587,7 @@ describe('Substitution with two compendia checking path updating', function () {
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
-        this.timeout(60000);
+        this.timeout(120000);
 
         // first upload
         request(req_erc_base02, (err, res, body) => {
