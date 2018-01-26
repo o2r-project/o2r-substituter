@@ -18,7 +18,6 @@
 /* eslint-env mocha */
 const assert = require('chai').assert;
 const request = require('request');
-const fse = require('fs-extra');
 const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
@@ -67,13 +66,13 @@ describe('Substitution listing', function () {
         before(function (done) {
             this.timeout(60000);
 
-            let req_erc_base02 = uploadCompendium('./test/erc/base02', cookie_o2r);
-            let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
+            let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
+            let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
             var base_id;
             var overlay_id;
             let base_file = "data/BerlinMit.csv";
             let overlay_file = "data/BerlinOhne.csv";
-            var metadatahandling = "keepBase";
+            var metadataHandling = "keepBase";
 
             // first upload
             request(req_erc_base02, (err, res, body) => {
@@ -92,7 +91,7 @@ describe('Substitution listing', function () {
                             assert.ifError(err);
 
                             // substitution
-                            let req_substitution = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                            let req_substitution = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
                             request(req_substitution, (err, res, body) => {
                                 assert.ifError(err);
                                 substitution_id = body.id;

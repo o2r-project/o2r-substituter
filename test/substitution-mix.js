@@ -18,7 +18,6 @@
 /* eslint-env mocha */
 const assert = require('chai').assert;
 const request = require('request');
-const fse = require('fs-extra');
 const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
@@ -36,10 +35,10 @@ const publishCandidate = require('./util').publishCandidate;
 describe('Substitution of data with compendium as base and workspace as overlay', function () {
     var base_id;
     var overlay_id;
-    var metadatahandling = "keepBase";
+    var metadataHandling = "keepBase";
 
     before(function (done) {
-        let req_erc_base02 = uploadCompendium('./test/erc/base02', cookie_o2r);
+        let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
         let req_workspace_overlay01 = uploadCompendium('./test/workspace/overlay01', cookie_o2r, 'workspace');
         this.timeout(60000);
 
@@ -65,7 +64,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
         });
     });
 
-    describe('POST /api/v1/substitution with one valid ERC and one valid WORKSPACE', () => {
+    describe('POST /api/v1/substitution', () => {
         var substituted_id;
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "files/BerlinOhne.csv";
@@ -73,7 +72,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
         it('should respond with HTTP 200 OK and valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -86,7 +85,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
 
         it('should respond with valid ID (and now publish it)', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -173,11 +172,11 @@ describe('Substitution of data with compendium as base and workspace as overlay'
 describe('Substitution of data with one workspace as base and one compendium as overlay', function () {
     var base_id;
     var overlay_id;
-    var metadatahandling = "keepBase";
+    var metadataHandling = "keepBase";
 
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
-        let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
+        let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(60000);
 
         // first upload
@@ -202,7 +201,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
         });
     });
 
-    describe('POST /api/v1/substitution with one valid WORKSPACE and one valid ERC', () => {
+    describe('POST /api/v1/substitution', () => {
         var substituted_id;
         let base_file = "files/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -210,7 +209,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
         it('should respond with HTTP 200 OK and valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -223,7 +222,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
         it('should respond with valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -235,7 +234,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
 
         it('should respond with valid ID', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -322,11 +321,11 @@ describe('Substitution of data with one workspace as base and one compendium as 
 describe('Failing substitution of data with one workspace as base and compendium as overlay', function () {
     var base_id;
     var overlay_id;
-    var metadatahandling = "keepBase";
+    var metadataHandling = "keepBase";
 
     before(function (done) {
         let req_workspace_base02 = uploadCompendium('./test/workspace/base02', cookie_o2r, 'workspace');
-        let req_erc_overlay02 = uploadCompendium('./test/erc/overlay02', cookie_o2r);
+        let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(60000);
 
         // first upload
@@ -351,7 +350,7 @@ describe('Failing substitution of data with one workspace as base and compendium
         });
     });
 
-    describe('POST /api/v1/substitution with one valid WORKSPACE and one valid ERC', () => {
+    describe('POST /api/v1/substitution', () => {
         var substituted_id;
         let base_file = "BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -359,7 +358,7 @@ describe('Failing substitution of data with one workspace as base and compendium
         it('should fail with HTTP 400 and valid JSON', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
@@ -373,7 +372,7 @@ describe('Failing substitution of data with one workspace as base and compendium
         it('should fail with error configuration is missing', (done) => {
 
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
-                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadatahandling, cookie_o2r);
+                let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
                 request(req, (err, res, body) => {
                     assert.ifError(err);
