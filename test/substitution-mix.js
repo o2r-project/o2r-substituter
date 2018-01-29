@@ -148,7 +148,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
             getFile(substituted_id, 'BerlinMit.csv', (err, res, body) => {
                 assert.ifError(err);
                 assert.equal(res.statusCode, 200);
-                assert.equal(body, '1990,18186');
+                assert.include(body, '1990,18186');
 
                 getFile(substituted_id, 'BerlinOhne.csv', (err, res, body) => {
                     assert.ifError(err);
@@ -163,7 +163,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
 });
 
 
-describe('Substitution of data with one workspace as base and one compendium as overlay', function () {
+describe.only('Substitution of data with one workspace as base (must run job) and one compendium as overlay', function () {
     var base_id;
     var overlay_id;
     var metadataHandling = "keepBase";
@@ -171,7 +171,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
-        this.timeout(60000);
+        this.timeout(120000);
 
         // first upload
         request(req_workspace_base01, (err, res, body) => {
@@ -188,7 +188,13 @@ describe('Substitution of data with one workspace as base and one compendium as 
 
                     publishCandidate(overlay_id, cookie_o2r, (err) => {
                         assert.ifError(err);
-                        done();
+
+                        // run job for base compendium, because it is a workspace
+                        startJob(base_id, id => {
+                            assert.isOk(id);
+                            sleep.sleep(30);            
+                            done();
+                        });
                     });
                 });
             });
@@ -200,8 +206,7 @@ describe('Substitution of data with one workspace as base and one compendium as 
         let base_file = "files/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
-        it('should respond with HTTP 200 OK and valid JSON', (done) => {
-
+        it('should respond with HTTP 200 OK', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
@@ -214,7 +219,6 @@ describe('Substitution of data with one workspace as base and one compendium as 
         });
 
         it('should respond with valid JSON', (done) => {
-
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
