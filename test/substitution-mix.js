@@ -306,7 +306,7 @@ describe.only('Substitution of data with one workspace as base (must run job) an
                     assert.equal(res.statusCode, 200);
                     assert.equal(body, '1,2,3'); // is file compendium/base01/overlay_BerlinOhne.csv
 
-                    request(global.test_host_read + '/api/v1/compendium/' + substituted_id + '/data/files/BerlinMit.csv', (err, res, body) => {
+                    request(global.test_host_files + '/api/v1/compendium/' + substituted_id + '/data/files/BerlinMit.csv', (err, res, body) => {
                         if (err) done(err);
                         assert.equal(res.statusCode, 200);
                         assert.include(body, '1990,18186');
