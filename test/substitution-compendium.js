@@ -30,7 +30,7 @@ const createSubstitutionPostRequest = require('./util').createSubstitutionPostRe
 const publishCandidate = require('./util').publishCandidate;
 
 
-describe.only('Substitution with two compendia', function () {
+describe('Substitution with two compendia', function () {
     var base_id;
     var overlay_id;
     var metadataHandling = "keepBase";
@@ -187,7 +187,7 @@ describe.only('Substitution with two compendia', function () {
         });
     });
 
-    describe.only('Substitution execution', () => {
+    describe('Substitution execution', () => {
         let substituted_id, job_id;
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
