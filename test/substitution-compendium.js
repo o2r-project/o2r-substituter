@@ -187,7 +187,7 @@ describe.only('Substitution with two compendia', function () {
         });
     });
 
-    describe('Substitution execution', () => {
+    describe.only('Substitution execution', () => {
         let substituted_id, job_id;
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -242,9 +242,7 @@ describe.only('Substitution with two compendia', function () {
 
             request(global.test_host_files + '/api/v1/job/' + job_id + '/data/main.html', (err, res, body) => {
                 assert.ifError(err);
-                
-                let string_ = 'maximum of ‘Gesamtbilanz’: 1051.2';
-                assert.include(body, string_);
+                assert.include(body, 'maximum of ‘Gesamtbilanz’: 1051.2');
                 done();
             });
         });
