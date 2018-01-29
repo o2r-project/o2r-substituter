@@ -57,7 +57,13 @@ describe('Substitution of data with two workspaces', function () {
 
                     publishCandidate(overlay_id, cookie_o2r, (err) => {
                         assert.ifError(err);
-                        done();
+
+                        // run job for base compendium, because it is a workspace
+                        startJob(base_id, id => {
+                            assert.isOk(id);
+                            sleep.sleep(30);
+                            done();
+                        });
                     });
                 });
             });

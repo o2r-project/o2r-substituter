@@ -163,7 +163,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
 });
 
 
-describe.only('Substitution of data with one workspace as base (must run job) and one compendium as overlay', function () {
+describe('Substitution of data with one workspace as base (must run job) and one compendium as overlay', function () {
     var base_id;
     var overlay_id;
     var metadataHandling = "keepBase";
