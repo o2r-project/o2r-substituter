@@ -9,32 +9,16 @@ author:
     url: http://rstudio.com
   - name: Second Author
     affiliation: Affiliation
-title:
-  formatted: "Mit Berlin formatted"
-  # If you use tex in the formatted title, also supply version without
-  plain:     "base01 - Mit Berlin"
-  # For running headers, if needed
-  short:     "Mit Berlin short"
+title: "base01 - Mit Berlin"
 abstract: >
   Abstract mit berlin abstract
-keywords:
-  # at least one keyword must be supplied
-  formatted: [mit]
-  plain:     [mit]
-preamble: >
-  \usepackage{amsmath}
-output: rticles::jss_article
 ---
-
-# Introduction
-
-This template demonstrates some of the basic latex you'll need to know to create a JSS article.
 
 # 01 mit Berlin -- Punkteplot
 
 ```{r Section1, echo=TRUE}
 getwd()
-csv <- read.csv("BerlinMit.csv", header=TRUE, sep=",")
+csv <- read.csv("files/BerlinMit.csv", header=TRUE, sep=",")
 #csv
 
 meineDaten <-  as.data.frame(csv)
@@ -76,20 +60,3 @@ y <- Gesamt
 
 plot(x,y, type="p", col="blue", main="Jahre vs Gesamt")
 ```
-
-
-# References
-
-This template demonstrates some of the basic latex you'll need to know to create a JSS article.
-
-## Code formatting
-
-Don't use markdown, instead use the more precise latex commands:
-
-* \proglang{Java}
-* \pkg{plyr}
-* \code{print("abc")}
-
-# R code
-
-Can be inserted in regular R markdown blocks.

@@ -9,26 +9,10 @@ author:
     url: http://rstudio.com
   - name: Second Author
     affiliation: Affiliation
-title:
-  formatted: "Ohne Berlin formatted"
-  # If you use tex in the formatted title, also supply version without
-  plain:     "overlay01 - Ohne Berlin"
-  # For running headers, if needed
-  short:     "Ohne Berlin short"
+title: "overlay01 - Ohne Berlin"
 abstract: >
   Abstract Ohne Berlin abstract
-keywords:
-  # at least one keyword must be supplied
-  formatted: [ohne]
-  plain:     [ohne]
-preamble: >
-  \usepackage{amsmath}
-output: rticles::jss_article
 ---
-
-# Introduction
-
-This template demonstrates some of the basic latex you'll need to know to create a JSS article.
 
 # 02 ohne Berlin -- Linienplot
 
@@ -82,19 +66,3 @@ writeText <- sprintf("This is the maximum of 'Gesamtbilanz': %s", max_)
 writeText
 ```
 ## `r writeText
-
-# References
-
-This template demonstrates some of the basic latex you'll need to know to create a JSS article.
-
-## Code formatting
-
-Don't use markdown, instead use the more precise latex commands:
-
-* \proglang{Java}
-* \pkg{plyr}
-* \code{print("abc")}
-
-# R code
-
-Can be inserted in regular R markdown blocks.

@@ -62,7 +62,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
         });
     });
 
-    describe('POST /api/v1/substitution', () => {
+    describe('Create substitution', () => {
         var substituted_id;
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "files/BerlinOhne.csv";
@@ -81,7 +81,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
             });
         });
 
-        it('should respond with valid ID (and now publish it)', (done) => {
+        it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
@@ -154,7 +154,7 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                     assert.ifError(err);
 
                     assert.equal(res.statusCode, 200);
-                    assert.equal(body, '1990,61568');
+                    assert.include(body, '1990,61568');
                     done();
                 });
             });
@@ -201,7 +201,7 @@ describe('Substitution of data with one workspace as base (must run job) and one
         });
     });
 
-    describe('POST /api/v1/substitution', () => {
+    describe('Create substitution', () => {
         var substituted_id;
         let base_file = "files/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -230,7 +230,7 @@ describe('Substitution of data with one workspace as base (must run job) and one
             });
         });
 
-        it('should respond with valid ID', (done) => {
+        it('should respond with valid ID and allow publishing', (done) => {
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
@@ -246,7 +246,7 @@ describe('Substitution of data with one workspace as base (must run job) and one
                     });
                 });
             });
-        });
+        }).timeout(20000);
 
         it('should respond with substituted property', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
@@ -351,7 +351,7 @@ describe('Failing substitution of data with one workspace as base and compendium
         });
     });
 
-    describe('POST /api/v1/substitution', () => {
+    describe('Create substitution', () => {
         var substituted_id;
         let base_file = "BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";

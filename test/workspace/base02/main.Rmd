@@ -26,10 +26,6 @@ preamble: >
 output: rticles::jss_article
 ---
 
-# Introduction
-
-This template demonstrates some of the basic latex you'll need to know to create a JSS article.
-
 # 01 mit Berlin -- Punkteplot
 
 ```{r Section1, echo=TRUE}
@@ -76,20 +72,3 @@ y <- Gesamt
 
 plot(x,y, type="p", col="blue", main="Jahre vs Gesamt")
 ```
-
-
-# References
-
-This template demonstrates some of the basic latex you'll need to know to create a JSS article.
-
-## Code formatting
-
-Don't use markdown, instead use the more precise latex commands:
-
-* \proglang{Java}
-* \pkg{plyr}
-* \code{print("abc")}
-
-# R code
-
-Can be inserted in regular R markdown blocks.

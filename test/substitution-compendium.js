@@ -62,7 +62,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution', () => {
+    describe('Create substitution', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -230,8 +230,6 @@ describe('Substitution with two compendia', function () {
                     assert.propertyVal(response.steps.cleanup, 'status', 'success');
                     done();
                 });
-
-                done();
             });
         }).timeout(60000);
 
@@ -296,7 +294,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with an overlay filename that already exists as an base filename', () => {
+    describe('Create substitution with an overlay filename that already exists as an base filename', () => {
         var substituted_id;
         let base_file = "data/main.Rmd";
         let overlay_file = "data/main.Rmd";
@@ -382,7 +380,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with invalid base ID', () => {
+    describe('Create substitution with invalid base ID', () => {
         let base_id = "12345";
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -401,7 +399,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with missing base ID', () => {
+    describe('Create substitution with missing base ID', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -420,7 +418,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with invalid overlay ID', () => {
+    describe('Create substitution with invalid overlay ID', () => {
         let overlay_id = "12345";
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -439,7 +437,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with missing overlay ID', () => {
+    describe('Create substitution with missing overlay ID', () => {
         let overlay_id = "12345";
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
@@ -459,7 +457,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with invalid base file', () => {
+    describe('Create substitution with invalid base file', () => {
         let base_file = "doesNotExist.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -477,7 +475,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with invalid overlay file', () => {
+    describe('Create substitution with invalid overlay file', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "doesNotExist.csv";
 
@@ -495,7 +493,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with empty substitution files', () => {
+    describe('Create substitution with empty substitution files', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -514,7 +512,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with no substitution files', () => {
+    describe('Create substitution with no substitution files', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -533,7 +531,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with only base filename but no overlay filename', () => {
+    describe('Create substitution with only base filename but no overlay filename', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -554,7 +552,7 @@ describe('Substitution with two compendia', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with only overlay filename but not base filename', () => {
+    describe('Create substitution with only overlay filename but not base filename', () => {
         let base_file = "data/BerlinMit.csv";
         let overlay_file = "data/BerlinOhne.csv";
 
@@ -609,7 +607,7 @@ describe('Substitution with two compendia checking path updating', function () {
         });
     });
 
-    describe('POST /api/v1/substitution with two valid compendia', () => {
+    describe('Create substitution with two valid compendia', () => {
         var substituted_id;
         var substituted_id_moreOverlays;
         let base_file = "data/BerlinMit.csv";

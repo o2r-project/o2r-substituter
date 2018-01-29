@@ -40,7 +40,7 @@ describe('Substitution of data with two workspaces', function () {
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
         let req_workspace_overlay03 = uploadCompendium('./test/workspace/overlay03', cookie_o2r, 'workspace');
-        this.timeout(60000);
+        this.timeout(120000);
 
         // first upload
         request(req_workspace_base01, (err, res, body) => {
@@ -58,11 +58,16 @@ describe('Substitution of data with two workspaces', function () {
                     publishCandidate(overlay_id, cookie_o2r, (err) => {
                         assert.ifError(err);
 
-                        // run job for base compendium, because it is a workspace
-                        startJob(base_id, id => {
-                            assert.isOk(id);
-                            sleep.sleep(30);
-                            done();
+                        // run job for base and overlay compendium
+                        startJob(base_id, jid1 => {
+                            assert.isOk(jid1);
+                            sleep.sleep(20);
+                            
+                            startJob(overlay_id, jid2 => {
+                                assert.isOk(jid2);
+                                sleep.sleep(20);
+                                done();
+                            });
                         });
                     });
                 });
@@ -70,14 +75,13 @@ describe('Substitution of data with two workspaces', function () {
         });
     });
 
-    describe('POST /api/v1/substitution responses', () => {
+    describe('Creation responses', () => {
         var substituted_id;
         var substituted_id_moreOverlays;
         let base_file = "files/BerlinMit.csv";
         let overlay_file = "BerlinOhne.csv";
 
         it('should respond with HTTP 200 OK and valid JSON', (done) => {
-
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 

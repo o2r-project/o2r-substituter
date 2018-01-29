@@ -112,6 +112,11 @@ publishCandidate = function (compendium_id, cookie, done) {
       let response = JSON.parse(body);
       updateMetadata.json = { o2r: response.metadata.o2r };
 
+      // hack some valid values into the configuration
+      if(!updateMetadata.json.o2r.displayfile) {
+        updateMetadata.json.o2r.displayfile = updateMetadata.json.o2r.mainfile;
+      }
+
       request(updateMetadata, (err, res, body) => {
         if (err || body.error) {
           console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
