@@ -192,7 +192,7 @@ describe.only('Substitution of data with one workspace as base (must run job) an
                         // run job for base compendium, because it is a workspace
                         startJob(base_id, id => {
                             assert.isOk(id);
-                            sleep.sleep(30);            
+                            sleep.sleep(30);
                             done();
                         });
                     });
@@ -293,17 +293,25 @@ describe.only('Substitution of data with one workspace as base (must run job) an
             });
         });
 
-        it('should respond with existence of substituted ERC files', (done) => {
+        it('should respond with existence of correct base and substitution files even when there was a naming conflict', (done) => {
+            // overlay file with name-clash > double prefix
             getFile(substituted_id, 'overlay_overlay_BerlinOhne.csv', (err, res, body) => {
                 assert.ifError(err);
                 assert.equal(res.statusCode, 200);
-                assert.equal(body, '1,2,3');
+                assert.include(body, '1990,61568'); // is file workspace/overlay/BerlinOhne.csv
 
-                request(global.test_host_read + '/api/v1/compendium/' + substituted_id + '/data/files/BerlinMit.csv', (err, res, body) => {
-                    if (err) done(err);
+                // unchanged file from base
+                getFile(substituted_id, 'overlay_BerlinOhne.csv', (err, res, body) => {
+                    assert.ifError(err);
                     assert.equal(res.statusCode, 200);
-                    assert.include(body, '1990,18186');
-                    done();
+                    assert.equal(body, '1,2,3'); // is file compendium/base01/overlay_BerlinOhne.csv
+
+                    request(global.test_host_read + '/api/v1/compendium/' + substituted_id + '/data/files/BerlinMit.csv', (err, res, body) => {
+                        if (err) done(err);
+                        assert.equal(res.statusCode, 200);
+                        assert.include(body, '1990,18186');
+                        done();
+                    });
                 });
             });
         });
