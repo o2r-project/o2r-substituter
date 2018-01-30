@@ -32,7 +32,7 @@ const getErcYml = require('./util').getErcYml;
 const getFile = require('./util').getFile;
 
 
-describe.only('Substitution of data with two workspaces', function () {
+describe('Substitution of data with two workspaces', function () {
     var base_id;
     var overlay_id;
     var metadataHandling = "keepBase";
