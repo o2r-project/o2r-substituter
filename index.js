@@ -143,8 +143,9 @@ function initApp(callback) {
       };
 
       debug('[%s] Starting substitution of new compendium [base: "%s" - overlay: "%s"] ...', passon.id, passon.metadata.substitution.base, passon.metadata.substitution.overlay);
-      return controllers.substitute.getMetadata(passon)             // get metadata
-        .then(controllers.substitute.checkOverlayId)                // check ERC id of overlay ERC
+      return controllers.substitute.checkBase(passon)               // check base and get metadata
+        .then(controllers.substitute.checkOverlay)                  // check overlay
+        .then(controllers.substitute.checkSubstitutionFiles)        // check the provided substitution data
         .then(controllers.substitute.createFolder)                  // create folder with id
         .then(controllers.substitute.copyBaseFiles)                 // copy base files into folder
         .then(controllers.substitute.copyOverlayFiles)              // copy overlay files into folder
@@ -157,7 +158,7 @@ function initApp(callback) {
           res.status(200).send({ 'id': passon.id });
         })
         .catch(err => {
-          debug('[%s] - Error during substitution \n %s', passon.id, JSON.stringify(err));
+          debug('[%s] Error during substitution: %s', passon.id, err);
 
           let status = 500;
           if (err.status) {

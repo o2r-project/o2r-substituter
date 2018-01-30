@@ -231,7 +231,7 @@ describe('Substitution with two compendia', function () {
                     done();
                 });
             });
-        }).timeout(60000);
+        }).timeout(90000);
 
         // base uses points for the plot, the overlay uses lines
         it('job display file should have been created with overlay dataset', (done) => {
@@ -545,7 +545,7 @@ describe('Substitution with two compendia', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { error: 'overlay file "data/BerlinOhne.csv" does not exist' });
+                    assert.include(body, { error: 'overlay file is undefined' });
                     done();
                 });
             });
@@ -566,7 +566,7 @@ describe('Substitution with two compendia', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { error: 'base file "data/BerlinMit.csv" does not exist' });
+                    assert.include(body, { error: 'base file is undefined' });
                     done();
                 });
             });
