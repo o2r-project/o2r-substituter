@@ -32,7 +32,7 @@ const getErcYml = require('./util').getErcYml;
 const getFile = require('./util').getFile;
 
 
-describe('Substitution of data with two workspaces', function () {
+describe.only('Substitution of data with two workspaces', function () {
     var base_id;
     var overlay_id;
     var metadataHandling = "keepBase";
@@ -62,7 +62,7 @@ describe('Substitution of data with two workspaces', function () {
                         startJob(base_id, jid1 => {
                             assert.isOk(jid1);
                             sleep.sleep(20);
-                            
+
                             startJob(overlay_id, jid2 => {
                                 assert.isOk(jid2);
                                 sleep.sleep(20);
@@ -124,8 +124,6 @@ describe('Substitution of data with two workspaces', function () {
             let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
             request(req, (err, res, body) => {
                 assert.ifError(err);
-                assert.property(body, 'id');
-                assert.isString(body.id);
                 substituted_id = body.id;
 
                 publishCandidate(substituted_id, cookie_o2r, (err) => {

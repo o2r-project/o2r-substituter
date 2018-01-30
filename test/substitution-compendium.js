@@ -468,7 +468,7 @@ describe('Substitution with two compendia', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { error: 'base file does not exist' });
+                    assert.include(body, { error: 'base file "doesNotExist.csv" does not exist' });
                     done();
                 });
             });
@@ -486,7 +486,7 @@ describe('Substitution with two compendia', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { error: 'overlay file does not exist' });
+                    assert.include(body, { error: 'overlay file "doesNotExist.csv" does not exist' });
                     done();
                 });
             });
@@ -545,7 +545,7 @@ describe('Substitution with two compendia', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { error: 'substitution overlay file does not exist' });
+                    assert.include(body, { error: 'overlay file "data/BerlinOhne.csv" does not exist' });
                     done();
                 });
             });
@@ -566,7 +566,7 @@ describe('Substitution with two compendia', function () {
                 request(req, (err, res, body) => {
                     assert.ifError(err);
                     assert.equal(res.statusCode, 400);
-                    assert.include(body, { error: 'substitution base file does not exist' });
+                    assert.include(body, { error: 'base file "data/BerlinMit.csv" does not exist' });
                     done();
                 });
             });

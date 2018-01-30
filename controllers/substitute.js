@@ -147,7 +147,7 @@ function copyBaseFiles(passon) {
 
         // check if array substitutionFiles exists and has data
         if (Array.isArray(substFiles) && Number.isInteger(substFiles.length) && substFiles.length > 0) {
-            for (var i = 0; i <= substFiles.length; i++) {
+            for (var i = 0; i <= substFiles.length; i++) { // FIXME use forEach and don't do final processing within loop
                 if (i == substFiles.length) {
                     try {
                         debug('[%s] Copy base files from %s to %s', passon.id, copyBasePath, passon.substitutedPath);
@@ -169,7 +169,7 @@ function copyBaseFiles(passon) {
                             cleanup(passon);
                             let err = new Error();
                             err.status = 400;
-                            err.msg = 'substitution base file does not exist';
+                            err.msg = 'base file "' + substFiles[i].base + '" does not exist';
                             reject(err);
                         } else {
                             // check if overlay filename exists in substitutionFiles
@@ -178,17 +178,17 @@ function copyBaseFiles(passon) {
                                 cleanup(passon);
                                 let err = new Error();
                                 err.status = 400;
-                                err.msg = 'substitution overlay file does not exist';
+                                err.msg = 'overlay file "' + substFiles[i].overlay + '" does not exist';
                                 reject(err);
                             } else {
                                 let baseFileFullPath = path.join(passon.basePath, substFiles[i].base);
                                 // check if base file exists in base path
                                 if (!fse.existsSync(baseFileFullPath)) {
-                                    debug('[%s] Base file does not exist - filename:\n%s', passon.id, substFiles[i].base);
+                                    debug('[%s] Base file %s does not exist at full path: %s', passon.id, substFiles[i].base, baseFileFullPath);
                                     let err = new Error();
                                     cleanup(passon);
                                     err.status = 400;
-                                    err.msg = 'base file does not exist';
+                                    err.msg = 'base file "' + substFiles[i].base + '" does not exist';
                                     reject(err);
                                 } else {
                                     debug('[%s] base file %s exists at %s', passon.id, substFiles[i].base, baseFileFullPath);
@@ -257,7 +257,7 @@ function copyOverlayFiles(passon) {
                         debug('[%s] Error copying overlay files to directory of new compendium: %s', passon.id, err);
                         cleanup(passon);
                         err.status = 400;
-                        err.msg = 'overlay file does not exist';
+                        err.msg = 'overlay file "' + substFiles[i].overlay + '" does not exist';
                         reject(err);
                     }
                 } // end copying files
@@ -266,7 +266,7 @@ function copyOverlayFiles(passon) {
             debug('[%s] Error copying overlay files to directory of new compendium : %s', passon.id, err);
             cleanup(passon);
             err.status = 400;
-            err.msg = 'overlay file does not exist';
+            err.msg = 'Error copying overlay files to directory of new compendium.';
             reject(err);
         }
     });
@@ -284,19 +284,16 @@ function updatePathMetadata(passon) {
             try {
                 let pathsArray = config.meta.updatePath;
                 let updatedJSON = passon.baseMetaData;
-                for (let i=0; i<pathsArray.length; i++) {
-                  debug('[#%s] update path in metadata at [%s]', i+1, updatedJSON.o2r[pathsArray[i]]);
-                  let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
-                  if (passon.bag) { // delete "data/" if base ERC is a bag
-                      debug('[%s] Updating path in metadata - ERC is a bag');
-                      if (stringified.indexOf('data/') >= 0) {
+                for (let i = 0; i < pathsArray.length; i++) {
+                    debug('[#%s] update path in metadata at [%s] (is bag? %s)', i + 1, updatedJSON.o2r[pathsArray[i]], passon.bag);
+                    let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
+                    if (passon.bag && stringified.indexOf('data/') >= 0) { // delete "data/" if base ERC is a bag
                         stringified = stringified.replace('data/', '');
-                      }
-                  }
-                  if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
-                      stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
-                  }
-                  updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
+                    }
+                    if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
+                        stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
+                    }
+                    updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
                 }
                 passon.baseMetaData = updatedJSON;
                 fulfill(passon);
@@ -462,7 +459,7 @@ function updateCompendiumConfiguration(passon) {
                 doc.execution.cmd = "'" + dockerCmd + " " + passon.imageTag + "'";
                 doc.execution.bind_mounts = passon.execution.bind_mounts;
                 writeYaml(yamlPath, doc, function (err) {
-                    if(err) {
+                    if (err) {
                         debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
                         cleanup(passon);
                         reject("Error writing erc.yml in: %s", yamlPath);
