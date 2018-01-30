@@ -33,7 +33,7 @@ var Compendium = require('../lib/model/compendium');
  * function to get metadata of base compendium
  * @param {object} passon - new compendium id and data of origin compendia
  */
-function getMetadata(passon) {
+function checkBase(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] Requesting metadata of base compendium with id - %s ...', passon.id, passon.metadata.substitution.base);
         try {
@@ -53,8 +53,11 @@ function getMetadata(passon) {
                             reject(err);
                         } else {
                             debug('[%s] Requesting metadata of base compendium with id - %s - successful.', passon.id, passon.metadata.substitution.base);
+                            
                             passon.baseMetaData = compendium.metadata;
                             passon.bag = compendium.bag;
+                            passon.basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
+
                             fulfill(passon);
                         }
                     }
@@ -72,7 +75,7 @@ function getMetadata(passon) {
  * function to check if overlay compendium exists
  * @param {object} passon - new compendium id and data of origin compendia
  */
-function checkOverlayId(passon) {
+function checkOverlay(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] Checking overlay compendium with id - %s ...', passon.id, passon.metadata.substitution.overlay);
         try {
@@ -92,8 +95,11 @@ function checkOverlayId(passon) {
                             reject(err);
                         } else {
                             debug('[%s] Checking metadata of overlay compendium with id - %s - successful.', passon.id, passon.metadata.substitution.overlay);
+                            
                             passon.overlay = {};
                             passon.overlay.bag = compendium.bag;
+                            passon.overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
+
                             fulfill(passon);
                         }
                     }
@@ -108,6 +114,76 @@ function checkOverlayId(passon) {
 }
 
 /**
+ * function to check if provided base and overlay files exist
+ * @param {object} passon
+ */
+function checkSubstitutionFiles(passon) {
+    debug('[%s] Checking substitution files...', passon.id);
+    return new Promise((fulfill, reject) => {
+        let substFiles = passon.metadata.substitution.substitutionFiles;
+
+        // check if array substitutionFiles exists and has data
+        if (substFiles && Array.isArray(substFiles) && substFiles.length > 0) {
+            for (var i = 0; i < substFiles.length; ++i) { // use a normal for loop so we can use break;
+                debug('[%s] Checking substitution: %s', passon.id, JSON.stringify(substFiles[i]));
+
+                if (!isNonEmptyString(substFiles[i].base)) {
+                    debug('[%s] Base file is not valid: %s', passon.id, substFiles[i].base);
+                    cleanup(passon);
+                    let err = new Error();
+                    err.status = 400;
+                    err.msg = 'base file is undefined';
+                    reject(err);
+                    break;
+                }
+
+                if (!isNonEmptyString(substFiles[i].overlay)) {
+                    debug('[%s] Overlay file is not valid: %s', passon.id, substFiles[i].overlay);
+                    cleanup(passon);
+                    let err = new Error();
+                    err.status = 400;
+                    err.msg = 'overlay file is undefined';
+                    reject(err);
+                    break;
+                }
+
+                let baseFileFullPath = path.join(passon.basePath, substFiles[i].base);
+                let overlayFileFullPath = path.join(passon.overlayPath, substFiles[i].overlay);
+
+                if (!fse.existsSync(baseFileFullPath)) {
+                    debug('[%s] Base file %s does not exist', passon.id, baseFileFullPath);
+                    let err = new Error();
+                    cleanup(passon);
+                    err.status = 400;
+                    err.msg = 'base file "' + substFiles[i].base + '" does not exist';
+                    reject(err);
+                    break;
+                }
+
+                if (!fse.existsSync(overlayFileFullPath)) {
+                    debug('[%s] Overlay file %s does not exist', passon.id, overlayFileFullPath);
+                    cleanup(passon);
+                    let err = new Error();
+                    err.status = 400;
+                    err.msg = 'overlay file "' + substFiles[i].overlay + '" does not exist';
+                    reject(err);
+                    break;
+                }
+            }
+
+            fulfill(passon);
+        } else {
+            debug('[%s] substitutionFiles is not defined in %s', passon.id, JSON.stringify(passon.metadata.substitution));
+            cleanup(passon);
+            let err = new Error();
+            err.status = 400;
+            err.msg = 'substitution files missing';
+            reject(err);
+        }
+    });
+}
+
+/**
  * function to create folder for new compendium
  * @param {object} passon - new compendium id and data of origin compendia
  */
@@ -119,8 +195,6 @@ function createFolder(passon) {
             fse.mkdirsSync(outputPath);
             debug('[%s] Created folder for new compendium in: \n # %s\n', passon.id, outputPath);
             passon.substitutedPath = outputPath;
-            passon.basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
-            passon.overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
             debug("[%s] basePath: [%s], overlayPath: [%s], substitutedPath: [%s]", passon.id, passon.basePath, passon.overlayPath, passon.substitutedPath);
             fulfill(passon);
         } catch (err) {
@@ -145,73 +219,18 @@ function copyBaseFiles(passon) {
             copyBasePath = path.join(passon.basePath, 'data');
         }
 
-        // check if array substitutionFiles exists and has data
-        if (Array.isArray(substFiles) && Number.isInteger(substFiles.length) && substFiles.length > 0) {
-            for (var i = 0; i <= substFiles.length; i++) {
-                if (i == substFiles.length) {
-                    try {
-                        debug('[%s] Copy base files from %s to %s', passon.id, copyBasePath, passon.substitutedPath);
-                        fse.copySync(copyBasePath, passon.substitutedPath);
-                        debug('[%s] Finished copy base files', passon.id);
-                        fulfill(passon);
-                    } catch (err) {
-                        debug('[%s] Error copying base files to directory of new compendium:\n%s', passon.id, err);
-                        cleanup(passon);
-                        err.status = 400;
-                        err.msg = 'could not copy base files - base path does not exist';
-                        reject(err);
-                    }
-                } else {
-                    try {
-                        // check if base filename exists in substitutionFiles
-                        if (filenameNotExists(substFiles[i].base)) {
-                            debug('[%s] Error copying base files to directory of new compendium. - file:\n%s', passon.id, substFiles[i].base);
-                            cleanup(passon);
-                            let err = new Error();
-                            err.status = 400;
-                            err.msg = 'substitution base file does not exist';
-                            reject(err);
-                        } else {
-                            // check if overlay filename exists in substitutionFiles
-                            if (filenameNotExists(substFiles[i].overlay)) {
-                                debug('[%s] Error copying base files to directory of new compendium. - file:\n%s', passon.id, substFiles[i].overlay);
-                                cleanup(passon);
-                                let err = new Error();
-                                err.status = 400;
-                                err.msg = 'substitution overlay file does not exist';
-                                reject(err);
-                            } else {
-                                let baseFileFullPath = path.join(passon.basePath, substFiles[i].base);
-                                // check if base file exists in base path
-                                if (!fse.existsSync(baseFileFullPath)) {
-                                    debug('[%s] Base file does not exist - filename:\n%s', passon.id, substFiles[i].base);
-                                    let err = new Error();
-                                    cleanup(passon);
-                                    err.status = 400;
-                                    err.msg = 'base file does not exist';
-                                    reject(err);
-                                } else {
-                                    debug('[%s] base file %s exists at %s', passon.id, substFiles[i].base, baseFileFullPath);
-                                }
-                            } // end if - does overlay file exist?
-                        } // end if - does base file exist?
-                    } catch (err) {
-                        debug('[%s] Error copying base files to directory of new compendium: %s', passon.id, err);
-                        cleanup(passon);
-                        err.status = 400;
-                        err.msg = 'could not copy base files - base path does not exist';
-                        reject(err);
-                    }
-                }
-            } // end for
-        } else {
-            debug('[%s] Error copying overlay files to directory of new compendium.', passon.id);
+        try {
+            debug('[%s] Copy base files from %s to %s', passon.id, copyBasePath, passon.substitutedPath);
+            fse.copySync(copyBasePath, passon.substitutedPath);
+            debug('[%s] Finished copy base files', passon.id);
+            fulfill(passon);
+        } catch (err) {
+            debug('[%s] Error copying base files to directory of new compendium: %s', passon.id, err);
             cleanup(passon);
-            let err = new Error();
             err.status = 400;
-            err.msg = 'substitution files missing';
+            err.msg = 'could not copy base files - base path does not exist';
             reject(err);
-        } // end if - does substitutionFiles array exist
+        }
     });
 }
 
@@ -220,16 +239,15 @@ function copyBaseFiles(passon) {
  * @param {object} passon - new compendium id and data of origin compendia
  */
 function copyOverlayFiles(passon) {
-    debug('[%s] Copying overlay files ...', passon.id);
-
     return new Promise((fulfill, reject) => {
         let substFiles = passon.metadata.substitution.substitutionFiles;
-        debug('[%s] Running copy overlay files [%s] time(s) ...', passon.id, substFiles.length);
+        debug('[%s] Copying %s overlay files ...', passon.id, substFiles.length);
+
         try {
             for (var i = 0; i <= substFiles.length; i++) {
                 if (i == substFiles.length) {
                     // execute only if the last file is mounted
-                    debug('[%s] Finished copy overlay files.\n', passon.id);
+                    debug('[%s] Finished copy overlay files.', passon.id);
                     fulfill(passon);
                 } else {
                     overlayFileSource = path.join(passon.overlayPath, substFiles[i].overlay);
@@ -257,16 +275,16 @@ function copyOverlayFiles(passon) {
                         debug('[%s] Error copying overlay files to directory of new compendium: %s', passon.id, err);
                         cleanup(passon);
                         err.status = 400;
-                        err.msg = 'overlay file does not exist';
+                        err.msg = 'overlay file "' + substFiles[i].overlay + '" does not exist';
                         reject(err);
                     }
                 } // end copying files
             } // end for
         } catch (err) {
-            debug('[%s] Error copying overlay files to directory of new compendium : %s', passon.id, err);
+            debug('[%s] Error copying overlay files to directory of new compendium: %s', passon.id, err);
             cleanup(passon);
             err.status = 400;
-            err.msg = 'overlay file does not exist';
+            err.msg = 'Error copying overlay files to directory of new compendium.';
             reject(err);
         }
     });
@@ -284,19 +302,16 @@ function updatePathMetadata(passon) {
             try {
                 let pathsArray = config.meta.updatePath;
                 let updatedJSON = passon.baseMetaData;
-                for (let i=0; i<pathsArray.length; i++) {
-                  debug('[#%s] update path in metadata at [%s]', i+1, updatedJSON.o2r[pathsArray[i]]);
-                  let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
-                  if (passon.bag) { // delete "data/" if base ERC is a bag
-                      debug('[%s] Updating path in metadata - ERC is a bag');
-                      if (stringified.indexOf('data/') >= 0) {
+                for (let i = 0; i < pathsArray.length; i++) {
+                    debug('[#%s] update path in metadata at [%s] (is bag? %s)', i + 1, updatedJSON.o2r[pathsArray[i]], passon.bag);
+                    let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
+                    if (passon.bag && stringified.indexOf('data/') >= 0) { // delete "data/" if base ERC is a bag
                         stringified = stringified.replace('data/', '');
-                      }
-                  }
-                  if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
-                      stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
-                  }
-                  updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
+                    }
+                    if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
+                        stringified = stringified.replace(passon.metadata.substitution.base, passon.id);
+                    }
+                    updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
                 }
                 passon.baseMetaData = updatedJSON;
                 fulfill(passon);
@@ -386,7 +401,7 @@ function createVolumeBinds(passon) {
                     baseFileName = baseFileName.substring(splitCompBag);
                 }
 
-                if (filenameNotExists(substFiles[i].filename)) {
+                if (!isNonEmptyString(substFiles[i].filename)) {
                     reject(new Error('substitution filename has not been passed correctly.'));
                     return;
                 }
@@ -462,7 +477,7 @@ function updateCompendiumConfiguration(passon) {
                 doc.execution.cmd = "'" + dockerCmd + " " + passon.imageTag + "'";
                 doc.execution.bind_mounts = passon.execution.bind_mounts;
                 writeYaml(yamlPath, doc, function (err) {
-                    if(err) {
+                    if (err) {
                         debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
                         cleanup(passon);
                         reject("Error writing erc.yml in: %s", yamlPath);
@@ -488,21 +503,20 @@ function updateCompendiumConfiguration(passon) {
 };
 
 /**
- * function to check if filename exist
- * @param {object} filename - filename
- * @return {boolean} true, if filename does not exist, else false
+ * function to check string is defined and not empty
  */
-function filenameNotExists(filename) {
-    if (filename == undefined || typeof (filename) != 'string' || filename == '') {
-        return true;
-    } else {
+function isNonEmptyString(s) {
+    if (s == undefined || typeof (s) != 'string' || s == '') {
         return false;
+    } else {
+        return true;
     }
 };
 
 module.exports = {
-    getMetadata: getMetadata,
-    checkOverlayId: checkOverlayId,
+    checkBase: checkBase,
+    checkOverlay: checkOverlay,
+    checkSubstitutionFiles: checkSubstitutionFiles,
     createFolder: createFolder,
     copyBaseFiles: copyBaseFiles,
     copyOverlayFiles: copyOverlayFiles,

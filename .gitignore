@@ -39,3 +39,4 @@ jspm_packages
 # IDE settings
 .vscode
 .eslintrc.json
+**/.Rhistory

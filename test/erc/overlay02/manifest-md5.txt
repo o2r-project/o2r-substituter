@@ -1,7 +1,0 @@
-7baa85d872f568b77b27c84ff3f3efee  data/jss.cls
-b9564ddd59a06782310989e8f33db55e  data/jsslogo.jpg
-c161031ae2b8ae1df75b99612b7dd99a  data/Dockerfile
-57740374df23c841d3284b77ad1e59dc  data/BerlinOhne.csv
-0caf6dd3591d7783a13905ed068eb56f  data/main.Rmd
-9e13367ef4850e3c0d4fa27c607e2137  data/jss.bst
-194acd63f70434b81814089d178d433b  data/erc.yml
