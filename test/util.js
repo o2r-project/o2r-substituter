@@ -122,7 +122,7 @@ publishCandidate = function (compendium_id, cookie, done) {
           console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
           done(err || body.error);
         } else {
-          debug('Published candidate: %s', JSON.stringify(body).slice(0, 60));
+          debug('Published candidate: %s', JSON.stringify(body).slice(0, 80));
           done();
         }
       });
