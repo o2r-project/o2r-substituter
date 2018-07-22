@@ -387,13 +387,7 @@ function createVolumeBinds(passon) {
             volumes.push(baseVolume);
 
             let bind_mounts = [];
-            bind_mounts.push({
-                type: "bind",
-                source: config.docker.mount.basePath,
-                destination: config.docker.mount.containerWorkdir,
-                readonly: config.docker.mount.readonly
-            });
-
+            
             for (let i = 0; i < substFiles.length; i++) {
                 let baseFileName = substFiles[i].base;
                 if (passon.bag) {
@@ -416,13 +410,14 @@ function createVolumeBinds(passon) {
 
                 // --mount bind mounts as data structure
                 let mount = {
-                    type: "bind",
+                    //type: "bind", // fixed in spec
                     source: substFiles[i].filename,
-                    destination: path.join(config.docker.mount.containerWorkdir, baseFileName),
-                    readonly: config.docker.mount.readonly
+                    destination: path.join(config.docker.mount.containerWorkdir, baseFileName)
+                    //readonly: config.docker.mount.readonly // fixed in spec
                 };
                 bind_mounts.push(mount);
             }
+
             passon.execution = {};
             passon.execution.volumes = volumes;
             passon.execution.bind_mounts = bind_mounts;

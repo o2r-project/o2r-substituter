@@ -79,7 +79,6 @@ c.docker.mount = {};
 c.docker.mount.flag = "--mount ";
 c.docker.mount.basePath = '';
 c.docker.mount.containerWorkdir = '/erc';
-c.docker.mount.readonly = true;
 c.docker.cmd = 'docker run -it --rm';
 c.docker.imageNamePrefix = 'erc:';
 
