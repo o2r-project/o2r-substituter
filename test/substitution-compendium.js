@@ -22,6 +22,7 @@ const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
 const sleep = require('sleep');
+const mongojs = require('mongojs');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
@@ -35,31 +36,42 @@ describe('Substitution with two compendia', function () {
     var overlay_id;
     var metadataHandling = "keepBase";
 
+    db = mongojs(global.test_db, ['compendia']);
+
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(120000);
 
-        // first upload
-        request(req_erc_base02, (err, res, body) => {
-            assert.ifError(err);
-            base_id = JSON.parse(body).id;
+        // clear compendia
+        db.compendia.drop(function (err, doc) {
 
-            publishCandidate(base_id, cookie_o2r, (err) => {
+            // first upload
+            request(req_erc_base02, (err, res, body) => {
                 assert.ifError(err);
+                base_id = JSON.parse(body).id;
 
-                // second upload
-                request(req_erc_overlay02, (err, res, body) => {
+                publishCandidate(base_id, cookie_o2r, (err) => {
                     assert.ifError(err);
-                    overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                    // second upload
+                    request(req_erc_overlay02, (err, res, body) => {
                         assert.ifError(err);
-                        done();
+                        overlay_id = JSON.parse(body).id;
+
+                        publishCandidate(overlay_id, cookie_o2r, (err) => {
+                            assert.ifError(err);
+                            done();
+                        });
                     });
                 });
             });
         });
+    });
+
+    after(function (done) {
+        db.close();
+        done();
     });
 
     describe('Create substitution', () => {
@@ -185,6 +197,17 @@ describe('Substitution with two compendia', function () {
                 });
             });
         });
+
+        it('should have replaced the old ID with the new one in the configuration file', (done) => {
+            getFile(substituted_id, 'erc.yml', (err, res, body) => {
+                assert.ifError(err);
+                assert.equal(res.statusCode, 200);
+                assert.include(body, 'id: ' + substituted_id);
+                assert.notInclude(body, 'b9b0099e-base');
+                assert.notInclude(body, 'b9b0099e-overlay');
+                done();
+            });
+        });
     });
 
     describe('Substitution execution', () => {
@@ -241,6 +264,7 @@ describe('Substitution with two compendia', function () {
             request(global.test_host_files + '/api/v1/job/' + job_id + '/data/main.html', (err, res, body) => {
                 assert.ifError(err);
                 assert.include(body, 'maximum of ‘Gesamtbilanz’: 1051.2');
+                assert.notInclude(body, '55.1');
                 done();
             });
         });
@@ -253,7 +277,7 @@ describe('Substitution with two compendia', function () {
 
         before(function (done) {
             this.timeout(120000);
-            
+
             request(global.test_host + '/api/v1/substitution', (err, res, body) => {
                 let req = createSubstitutionPostRequest(base_id, overlay_id, base_file, overlay_file, metadataHandling, cookie_o2r);
 
@@ -575,32 +599,40 @@ describe('Substitution with two compendia', function () {
 });
 
 
-describe('Substitution with two compendia checking path updating', function () {
+describe('Path updating for substitution with two compendia', function () {
     var base_id;
     var overlay_id;
     var metadataHandling = "keepBase";
+
+    var db = mongojs(global.test_db, ['compendia']);
 
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(120000);
 
-        // first upload
-        request(req_erc_base02, (err, res, body) => {
-            assert.ifError(err);
-            base_id = JSON.parse(body).id;
+        // clear compendia
+        db.compendia.drop(function (err, doc) {
 
-            publishCandidate(base_id, cookie_o2r, (err) => {
+            // first upload
+            request(req_erc_base02, (err, res, body) => {
                 assert.ifError(err);
+                base_id = JSON.parse(body).id;
 
-                // second upload
-                request(req_erc_overlay02, (err, res, body) => {
+                publishCandidate(base_id, cookie_o2r, (err) => {
                     assert.ifError(err);
-                    overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                    // second upload
+                    request(req_erc_overlay02, (err, res, body) => {
                         assert.ifError(err);
-                        done();
+                        overlay_id = JSON.parse(body).id;
+
+                        publishCandidate(overlay_id, cookie_o2r, (err) => {
+                            assert.ifError(err);
+
+                            db.close();
+                            done();
+                        });
                     });
                 });
             });
@@ -666,14 +698,11 @@ describe('Substitution with two compendia checking path updating', function () {
             });
         });
 
-        it('should respond with substituted ERC id in o2r metadata', (done) => {
+        it('should respond with substituted compendium id', (done) => {
             request(global.test_host_read + '/api/v1/compendium/' + substituted_id, (err, res, body) => {
                 assert.ifError(err);
                 let response = JSON.parse(body);
-                assert.property(response, 'metadata');
-                assert.property(response.metadata, 'o2r');
-                assert.property(response.metadata.o2r, 'ercIdentifier');
-                assert.propertyVal(response.metadata.o2r, 'ercIdentifier', substituted_id);
+                assert.propertyVal(response, 'id', substituted_id);
                 done();
             });
         });

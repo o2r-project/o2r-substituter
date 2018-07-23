@@ -33,7 +33,8 @@ const dbOptions = {
   reconnectTries: Number.MAX_VALUE,
   keepAlive: 30000,
   socketTimeoutMS: 30000,
-  promiseLibrary: global.Promise
+  promiseLibrary: global.Promise,
+  useNewUrlParser: true
 };
 mongoose.connect(dbURI, dbOptions);
 mongoose.connection.on('error', (err) => {
@@ -150,8 +151,8 @@ function initApp(callback) {
         .then(controllers.substitute.copyBaseFiles)                 // copy base files into folder
         .then(controllers.substitute.copyOverlayFiles)              // copy overlay files into folder
         .then(controllers.substitute.createVolumeBinds)             // create metadata for writing to yaml
-        .then(controllers.substitute.updateCompendiumConfiguration) // write docker run cmd to erc.yml
-        .then(controllers.substitute.updatePathMetadata)            // update metadata of substituted ERC
+        .then(controllers.substitute.updateCompendiumConfiguration) // write docker run cmd and new id to compendium configuration file
+        .then(controllers.substitute.updateMetadata)                // update metadata of substituted compendium (paths, identifier)
         .then(controllers.substitute.saveToDB)                      // save to DB
         .then((passon) => {
           debug('[%s] Finished substitution of new compendium.', passon.id);

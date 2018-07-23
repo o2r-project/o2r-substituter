@@ -18,7 +18,7 @@ The configuration can be done via environment variables.
 - `SUBSTITUTER_PORT`
   Define on which port substituter should listen. Defaults to `8090`.
 - `SUBSTITUTER_MONGODB` __Required__
-  Location for the MongoDB. Defaults to `mongodb://localhost/`. You will very likely need to change this.
+  Location for the MongoDB. Defaults to `mongodb://localhost:27017/`. You will very likely need to change this.
 - `SUBSTITUTER_MONGODB_DATABASE`
   Which database inside the mongo db should be used. Defaults to `muncher`.
 - `SUBSTITUTER_BASEPATH`
@@ -31,7 +31,7 @@ The configuration can be done via environment variables.
 ```bash
 npm install
 
-# manually start mongodb, o2r-loader, and o2r-muncher
+# manually start mongodb, o2r-loader, o2r-muncher, and o2r-transporter
 npm start
 
 npm test

@@ -194,16 +194,15 @@ describe('Substitution of data with two workspaces', function () {
             });
         });
 
-        it('should respond with correct binds in erc.yml', (done) => {
+        it('should respond with correct binds in erc.yml (has the overlay, does not have payload mount)', (done) => {
             getErcYml(substituted_id, doc => {
                 assert.isArray(doc.execution.bind_mounts);
                 doc.execution.bind_mounts.forEach(bind => {
                     assert.isObject(bind);
-                    assert.propertyVal(bind, 'readonly', true);
-                    assert.propertyVal(bind, 'type', 'bind');
                 });
                 assert.oneOf('overlay_overlay_BerlinOhne.csv', doc.execution.bind_mounts.map(bind => { return (bind.source); }));
-                assert.oneOf('/erc', doc.execution.bind_mounts.map(bind => { return (bind.destination); }));
+                assert.oneOf('/erc/files/BerlinMit.csv', doc.execution.bind_mounts.map(bind => { return (bind.destination); }));
+                assert.notInclude('/erc', doc.execution.bind_mounts.map(bind => { return (bind.destination); }));
                 done();
             });
         });

@@ -29,7 +29,7 @@ c.api_version = 1;
 
 // network & database
 c.net.port = env.SUBSTITUTER_PORT || 8090;
-c.mongo.location = env.SUBSTITUTER_MONGODB || 'mongodb://localhost/';
+c.mongo.location = env.SUBSTITUTER_MONGODB || 'mongodb://localhost:27017/';
 c.mongo.database = env.SUBSTITUTER_MONGODB_DATABASE || 'muncher';
 c.mongo.initial_connection_attempts = 30;
 c.mongo.initial_connection_max_delay = 5000;
@@ -54,7 +54,6 @@ c.meta.updatePath = [
   'mainfile_candidates', //    xjiYy/data/main.Rmd
   'mainfile', //   xjiYy/data/main.Rmd
   'inputfiles', //       xjiYy/data/BerlinMit.csv
-  'ercIdentifier', //      xjiYy
   'displayfile', //      /api/v1/compendium/xjiYy/data/data/erc.yml
   'codefiles'  //        xjiYy/data/main.Rmd
   ]
@@ -79,7 +78,6 @@ c.docker.mount = {};
 c.docker.mount.flag = "--mount ";
 c.docker.mount.basePath = '';
 c.docker.mount.containerWorkdir = '/erc';
-c.docker.mount.readonly = true;
 c.docker.cmd = 'docker run -it --rm';
 c.docker.imageNamePrefix = 'erc:';
 

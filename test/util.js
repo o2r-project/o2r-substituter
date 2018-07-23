@@ -105,27 +105,32 @@ publishCandidate = function (compendium_id, cookie, done) {
   };
 
   request(getMetadata, (err, res, body) => {
-    if (err || body.error) {
-      console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
-      done(err || body.error);
+    if (err) {
+      console.error('error publishing candidate at %s\n%o', getMetadata.uri, err);
+      done(err);
     } else {
       let response = JSON.parse(body);
-      updateMetadata.json = { o2r: response.metadata.o2r };
+      if (response.error) {
+        console.error('error publishing candidate at %s\n%o', getMetadata.uri, response);
+        done(new Error(response.error));
+      } else {
+        updateMetadata.json = { o2r: response.metadata.o2r };
 
-      // hack some valid values into the configuration
-      if(!updateMetadata.json.o2r.displayfile) {
-        updateMetadata.json.o2r.displayfile = updateMetadata.json.o2r.mainfile;
-      }
-
-      request(updateMetadata, (err, res, body) => {
-        if (err || body.error) {
-          console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
-          done(err || body.error);
-        } else {
-          debug('Published candidate: %s', JSON.stringify(body).slice(0, 60));
-          done();
+        // hack some valid values into the configuration
+        if (!updateMetadata.json.o2r.displayfile) {
+          updateMetadata.json.o2r.displayfile = updateMetadata.json.o2r.mainfile;
         }
-      });
+
+        request(updateMetadata, (err, res, body) => {
+          if (err || body.error) {
+            console.error('error publishing candidate: %s %s', err, JSON.stringify(body));
+            done(err || body.error);
+          } else {
+            debug('Published candidate: %s', JSON.stringify(body).slice(0, 80));
+            done();
+          }
+        });
+      }
     }
   });
 }
