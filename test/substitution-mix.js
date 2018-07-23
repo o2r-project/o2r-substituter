@@ -22,6 +22,7 @@ const config = require('../config/config');
 const path = require('path');
 const yaml = require('js-yaml');
 const sleep = require('sleep');
+const mongojs = require('mongojs');
 
 require("./setup")
 const cookie_o2r = 's:C0LIrsxGtHOGHld8Nv2jedjL4evGgEHo.GMsWD5Vveq0vBt7/4rGeoH5Xx7Dd2pgZR9DvhKCyDTY';
@@ -35,27 +36,34 @@ describe('Substitution of data with compendium as base and workspace as overlay'
     var overlay_id;
     var metadataHandling = "keepBase";
 
+    var db = mongojs(global.test_db, ['compendia']);
+
     before(function (done) {
         let req_erc_base02 = uploadCompendium('./test/compendium/base', cookie_o2r);
         let req_workspace_overlay01 = uploadCompendium('./test/workspace/overlay01', cookie_o2r, 'workspace');
         this.timeout(60000);
 
-        // first upload
-        request(req_erc_base02, (err, res, body) => {
-            assert.ifError(err);
-            base_id = JSON.parse(body).id;
-
-            publishCandidate(base_id, cookie_o2r, (err) => {
+        // clear compendia
+        db.compendia.drop(function (err, doc) {
+            // first upload
+            request(req_erc_base02, (err, res, body) => {
                 assert.ifError(err);
+                base_id = JSON.parse(body).id;
 
-                // second upload
-                request(req_workspace_overlay01, (err, res, body) => {
+                publishCandidate(base_id, cookie_o2r, (err) => {
                     assert.ifError(err);
-                    overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                    // second upload
+                    request(req_workspace_overlay01, (err, res, body) => {
                         assert.ifError(err);
-                        done();
+                        overlay_id = JSON.parse(body).id;
+
+                        publishCandidate(overlay_id, cookie_o2r, (err) => {
+                            assert.ifError(err);
+
+                            db.close();
+                            done();
+                        });
                     });
                 });
             });
@@ -159,6 +167,16 @@ describe('Substitution of data with compendium as base and workspace as overlay'
                 });
             });
         });
+
+        it('should have replaced the old ID with the new one in the configuration file', (done) => {
+            getFile(substituted_id, 'erc.yml', (err, res, body) => {
+                assert.ifError(err);
+                assert.equal(res.statusCode, 200);
+                assert.include(body, 'id: ' + substituted_id);
+                assert.notInclude(body, 'b9b0099e-base');
+                done();
+            });
+        });
     });
 });
 
@@ -168,32 +186,40 @@ describe('Substitution of data with one workspace as base (must run job) and one
     var overlay_id;
     var metadataHandling = "keepBase";
 
+    var db = mongojs(global.test_db, ['compendia']);
+
     before(function (done) {
         let req_workspace_base01 = uploadCompendium('./test/workspace/base01', cookie_o2r, 'workspace');
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(120000);
 
-        // first upload
-        request(req_workspace_base01, (err, res, body) => {
-            assert.ifError(err);
-            base_id = JSON.parse(body).id;
+        // clear compendia
+        db.compendia.drop(function (err, doc) {
 
-            publishCandidate(base_id, cookie_o2r, (err) => {
+            // first upload
+            request(req_workspace_base01, (err, res, body) => {
                 assert.ifError(err);
+                base_id = JSON.parse(body).id;
 
-                // second upload
-                request(req_erc_overlay02, (err, res, body) => {
+                publishCandidate(base_id, cookie_o2r, (err) => {
                     assert.ifError(err);
-                    overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                    // second upload
+                    request(req_erc_overlay02, (err, res, body) => {
                         assert.ifError(err);
+                        overlay_id = JSON.parse(body).id;
 
-                        // run job for base compendium, because it is a workspace
-                        startJob(base_id, id => {
-                            assert.isOk(id);
-                            sleep.sleep(30);
-                            done();
+                        publishCandidate(overlay_id, cookie_o2r, (err) => {
+                            assert.ifError(err);
+
+                            // run job for base compendium, because it is a workspace
+                            startJob(base_id, id => {
+                                assert.isOk(id);
+                                sleep.sleep(30);
+
+                                db.close();
+                                done();
+                            });
                         });
                     });
                 });
@@ -324,27 +350,35 @@ describe('Failing substitution of data with one workspace as base and compendium
     var overlay_id;
     var metadataHandling = "keepBase";
 
+    var db = mongojs(global.test_db, ['compendia']);
+
     before(function (done) {
         let req_workspace_base02 = uploadCompendium('./test/workspace/base02', cookie_o2r, 'workspace');
         let req_erc_overlay02 = uploadCompendium('./test/compendium/overlay', cookie_o2r);
         this.timeout(60000);
 
-        // first upload
-        request(req_workspace_base02, (err, res, body) => {
-            assert.ifError(err);
-            base_id = JSON.parse(body).id;
+        // clear compendia
+        db.compendia.drop(function (err, doc) {
 
-            publishCandidate(base_id, cookie_o2r, (err) => {
+            // first upload
+            request(req_workspace_base02, (err, res, body) => {
                 assert.ifError(err);
+                base_id = JSON.parse(body).id;
 
-                // second upload
-                request(req_erc_overlay02, (err, res, body) => {
+                publishCandidate(base_id, cookie_o2r, (err) => {
                     assert.ifError(err);
-                    overlay_id = JSON.parse(body).id;
 
-                    publishCandidate(overlay_id, cookie_o2r, (err) => {
+                    // second upload
+                    request(req_erc_overlay02, (err, res, body) => {
                         assert.ifError(err);
-                        done();
+                        overlay_id = JSON.parse(body).id;
+
+                        publishCandidate(overlay_id, cookie_o2r, (err) => {
+                            assert.ifError(err);
+
+                            db.close();
+                            done();
+                        });
                     });
                 });
             });

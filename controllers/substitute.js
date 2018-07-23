@@ -53,7 +53,7 @@ function checkBase(passon) {
                             reject(err);
                         } else {
                             debug('[%s] Requesting metadata of base compendium with id - %s - successful.', passon.id, passon.metadata.substitution.base);
-                            
+
                             passon.baseMetaData = compendium.metadata;
                             passon.bag = compendium.bag;
                             passon.basePath = path.join(config.fs.compendium, passon.metadata.substitution.base);
@@ -95,7 +95,7 @@ function checkOverlay(passon) {
                             reject(err);
                         } else {
                             debug('[%s] Checking metadata of overlay compendium with id - %s - successful.', passon.id, passon.metadata.substitution.overlay);
-                            
+
                             passon.overlay = {};
                             passon.overlay.bag = compendium.bag;
                             passon.overlayPath = path.join(config.fs.compendium, passon.metadata.substitution.overlay);
@@ -291,21 +291,21 @@ function copyOverlayFiles(passon) {
 }
 
 /**
- * function to update substituted ERC metadata that have been copied from base ERC
+ * function to update substituted compendium metadata that have been copied from base compendium
  * @param {object} passon - compendium id and data of compendia
  */
-function updatePathMetadata(passon) {
+function updateMetadata(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] metadata handling is set to: %s', passon.id, passon.metadata.substitution.metadataHandling);
         if (passon.metadata.substitution.metadataHandling == "keepBase") {
-            debug('[%s] Starting update path in metadata ...', passon.id);
             try {
+                debug('[%s] Updating paths in metadata ...', passon.id);
                 let pathsArray = config.meta.updatePath;
                 let updatedJSON = passon.baseMetaData;
                 for (let i = 0; i < pathsArray.length; i++) {
                     debug('[#%s] update path in metadata at [%s] (is bag? %s)', i + 1, updatedJSON.o2r[pathsArray[i]], passon.bag);
                     let stringified = JSON.stringify(updatedJSON.o2r[pathsArray[i]]);
-                    if (passon.bag && stringified.indexOf('data/') >= 0) { // delete "data/" if base ERC is a bag
+                    if (passon.bag && stringified.indexOf('data/') >= 0) { // delete "data/" if base compendium is a bag
                         stringified = stringified.replace('data/', '');
                     }
                     if (stringified.indexOf(passon.metadata.substitution.base) >= 0) {
@@ -313,10 +313,11 @@ function updatePathMetadata(passon) {
                     }
                     updatedJSON.o2r[pathsArray[i]] = JSON.parse(stringified);
                 }
+
                 passon.baseMetaData = updatedJSON;
                 fulfill(passon);
             } catch (err) {
-                debug('[%s] Error updating path in metadata: %s', passon.id, err);
+                debug('[%s] Error updating path in metadata: %o', passon.id, err);
                 cleanup(passon);
                 reject(err);
             }
@@ -378,7 +379,7 @@ function createVolumeBinds(passon) {
 
             debug('[%s] Starting creating volume binds with image [%s] ...', passon.id, passon.imageTag);
             let substFiles = passon.metadata.substitution.substitutionFiles;
-            // data folder for erc.yaml
+            // data folder with configuration file
             let baseBind = config.docker.volume.basePath + ":" + config.docker.volume.containerWorkdir;
 
             // https://docs.docker.com/engine/admin/volumes/bind-mounts/
@@ -387,11 +388,11 @@ function createVolumeBinds(passon) {
             volumes.push(baseVolume);
 
             let bind_mounts = [];
-            
+
             for (let i = 0; i < substFiles.length; i++) {
                 let baseFileName = substFiles[i].base;
                 if (passon.bag) {
-                    let splitCompBag = baseFileName.indexOf("/") + 1;    // split after ".../ERC_ID/data/" to get only filenamePath of basefile
+                    let splitCompBag = baseFileName.indexOf("/") + 1;    // split after ".../<compendium id>/data/" to get only filenamePath of basefile
                     baseFileName = baseFileName.substring(splitCompBag);
                 }
 
@@ -410,10 +411,8 @@ function createVolumeBinds(passon) {
 
                 // --mount bind mounts as data structure
                 let mount = {
-                    //type: "bind", // fixed in spec
                     source: substFiles[i].filename,
                     destination: path.join(config.docker.mount.containerWorkdir, baseFileName)
-                    //readonly: config.docker.mount.readonly // fixed in spec
                 };
                 bind_mounts.push(mount);
             }
@@ -449,14 +448,14 @@ function cleanup(passon) {
 };
 
 /**
- * function to read erc.yml and overwrite with execution command for "docker run"
+ * function to read configuration file and overwrite with execution command for "docker run"
  * @param {object} passon - compendium id and data of compendia
  */
 function updateCompendiumConfiguration(passon) {
     return new Promise((fulfill, reject) => {
         debug('[%s] Starting write yaml ...', passon.id);
         let yamlPath = path.join(passon.substitutedPath, config.compendium.configFile);
-        // check if erc.yml exists
+        // check if configuration file exists
         if (fse.existsSync(yamlPath)) {
             try {
                 let dockerCmd = config.docker.cmd;
@@ -465,7 +464,12 @@ function updateCompendiumConfiguration(passon) {
                 });
 
                 let doc = yaml.safeLoad(fse.readFileSync(yamlPath, 'utf8'));
-                debug('[%s] Old erc.yml file (%s):\n%s', passon.id, yamlPath, yaml.dump(doc));
+                debug('[%s] Old configuration file (%s):\n%O', passon.id, yamlPath, doc);
+
+                // update id
+                doc.id = passon.id;
+
+                // add execution property
                 if (!doc.execution) {
                     doc.execution = {};
                 }
@@ -473,21 +477,21 @@ function updateCompendiumConfiguration(passon) {
                 doc.execution.bind_mounts = passon.execution.bind_mounts;
                 writeYaml(yamlPath, doc, function (err) {
                     if (err) {
-                        debug("[%s] Error writing erc.yml in: %s \n err: %s", passon.id, yamlPath, err);
+                        debug("[%s] Error writing configuration file to '%s', error: %o", passon.id, yamlPath, err);
                         cleanup(passon);
-                        reject("Error writing erc.yml in: %s", yamlPath);
+                        reject("Error writing configuration file to %s", yamlPath);
                     } else {
-                        debug('[%s] New erc.yml file (%s): \n %s', passon.id, yamlPath, yaml.dump(doc));
+                        debug('[%s] New configuration file (%s):\n%s', passon.id, yamlPath, yaml.dump(doc));
                         fulfill(passon);
                     }
                 });
             } catch (err) {
-                debug("[%s] Error writing erc.yml - err: %s", passon.iid, err);
+                debug("[%s] Error writing configuration file: %o", passon.id, err);
                 cleanup(passon);
-                reject("Error writing erc.yml in: %s", yamlPath);
+                reject("Error writing configuration file to %s", yamlPath);
             }
         } else {
-            debug("[%s] missing configuration file (erc.yml) in base compendium, please execute a job for the base compendium first", passon.id);
+            debug("[%s] missing configuration file in base compendium, returning error", passon.id);
             cleanup(passon);
             var err = new Error();
             err.status = 400;
@@ -519,5 +523,5 @@ module.exports = {
     createVolumeBinds: createVolumeBinds,
     cleanup: cleanup,
     updateCompendiumConfiguration: updateCompendiumConfiguration,
-    updatePathMetadata: updatePathMetadata
+    updateMetadata: updateMetadata
 };
