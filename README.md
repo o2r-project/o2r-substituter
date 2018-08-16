@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/o2r-project/o2r-substituter.svg?branch=master)](https://travis-ci.org/o2r-project/o2r-substituter) [![](https://images.microbadger.com/badges/version/o2rproject/o2r-substituter.svg)](https://microbadger.com/images/o2rproject/o2r-substituter "Get your own version badge on microbadger.com") [![](https://images.microbadger.com/badges/image/o2rproject/o2r-substituter.svg)](https://microbadger.com/images/o2rproject/o2r-substituter "Get your own image badge on microbadger.com")
 
-Node.js implementation to load compendia from third party repositories and handle direct user uploads for the [o2r web api](http://o2r.info/o2r-web-api).
+Node.js implementation to load compendia from third party repositories and handle direct user uploads for the [o2r API](https://o2r.info/api).
 
 Currently, it implements the endpoint `/api/v1/substitution`.
 

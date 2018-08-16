@@ -6,7 +6,7 @@ author:
   affiliation: University/Company
   email: name@wwu.de
   name: Torben Kraft
-  url: http://o2r.info
+  url: https://o2r.info
 - affiliation: Affiliation
   name: Second Author
 abstract: |
